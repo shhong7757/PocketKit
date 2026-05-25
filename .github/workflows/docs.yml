@@ -56,6 +56,8 @@ jobs:
           DOCS_OUTPUT_PATH: ${{ github.workspace }}/.build/docs-site
           SOURCE_BASE_URL: https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}
         run: |
+          mkdir -p "$(dirname "$DOCS_OUTPUT_PATH")"
+
           swift package \
             --package-path Tools/DocC \
             --allow-writing-to-directory "$DOCS_OUTPUT_PATH" \
