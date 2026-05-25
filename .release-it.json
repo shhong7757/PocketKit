@@ -6,8 +6,8 @@
     "requireCommits": true,
     "commit": false,
     "tag": true,
-    "tagName": "${version}",
-    "tagAnnotation": "${version}"
+    "tagName": "v${version}",
+    "tagAnnotation": "v${version}"
   },
   "github": {
     "release": true,
