@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "release": "release-it",
+    "release:dry-run": "release-it --dry-run --ci",
+    "release:version": "release-it --release-version --increment"
+  },
+  "devDependencies": {
+    "release-it": "^20.0.1"
+  }
+}

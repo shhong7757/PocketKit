@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/release-it@20/schema/release-it.json",
+  "git": {
+    "requireBranch": "main",
+    "requireCleanWorkingDir": true,
+    "requireCommits": true,
+    "commit": false,
+    "tag": true,
+    "tagName": "${version}",
+    "tagAnnotation": "${version}"
+  },
+  "github": {
+    "release": true,
+    "autoGenerate": true
+  },
+  "npm": false,
+  "hooks": {
+    "before:init": [
+      "swift format lint --recursive --parallel --strict Package.swift Sources Tests",
+      "swiftlint lint --strict --no-cache",
+      "swift build",
+      "swift test"
+    ]
+  }
+}

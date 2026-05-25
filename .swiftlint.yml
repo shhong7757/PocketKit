@@ -1,0 +1,12 @@
+included:
+  - Package.swift
+  - Examples
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+
+disabled_rules:
+  # swift-format inserts trailing commas in multiline collection literals.
+  - trailing_comma
