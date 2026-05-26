@@ -203,7 +203,7 @@ private struct MediaGalleryDetailPager<Item: Identifiable, Content: View>: View 
         GeometryReader { proxy in
             ScrollViewReader { scrollProxy in
                 ScrollView(.horizontal) {
-                    LazyHStack(spacing: 0) {
+                    LazyHStack(spacing: PocketUISpacing.space0) {
                         ForEach(items) { item in
                             page(for: item)
                                 .frame(
@@ -218,7 +218,7 @@ private struct MediaGalleryDetailPager<Item: Identifiable, Content: View>: View 
                 .scrollTargetBehavior(.paging)
                 .scrollIndicators(.hidden)
                 .scrollPosition(id: $currentPageID)
-                .contentMargins(.all, 0, for: .scrollContent)
+                .contentMargins(.all, PocketUISpacing.space0, for: .scrollContent)
                 .scrollDisabled(pagingDisabled)
                 .background(Color.black)
                 .onAppear {
