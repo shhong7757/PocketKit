@@ -183,7 +183,10 @@ struct MediaGalleryNavigationGrid<
         ProgressView()
             .controlSize(.regular)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, max(12, layout.resolvedSpacing * 2))
+            .padding(
+                .vertical,
+                max(PocketUISpacing.space3, layout.resolvedSpacing * 2)
+            )
             .accessibilityLabel(Text("Loading more media"))
     }
 }

@@ -76,7 +76,7 @@ MediaGalleryView(
     Text(item.title)
         .font(.caption.weight(.semibold))
         .foregroundStyle(.white)
-        .padding(8)
+        .padding(PocketUISpacing.space2)
 } emptyStateContent: {
     ContentUnavailableView("No Media", systemImage: "photo")
 } detailToolbarContent: { item in
@@ -94,6 +94,7 @@ MediaGalleryView(
 간격, 열 너비, 셀 비율, 스크롤 인디케이터는 ``MediaGalleryLayout``으로
 조정합니다. 셀을 꽉 채우려면 ``MediaGalleryContentDisplayMode/fill``을, 항목별
 비율을 보존하려면 ``MediaGalleryContentDisplayMode/fit``을 사용합니다.
+반복되는 간격 값은 ``PocketUISpacing`` 토큰을 사용할 수 있습니다.
 
 ### 더 불러오기
 

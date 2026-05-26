@@ -171,7 +171,7 @@ private enum MediaGalleryDemoGridDensity: CaseIterable, Identifiable {
             return MediaGalleryLayout()
         case .dense:
             return MediaGalleryLayout(
-                spacing: 2,
+                spacing: PocketUISpacing.spaceHalf,
                 minimumColumnWidth: 88,
                 maximumColumnWidth: 132
             )
@@ -194,7 +194,7 @@ private struct MediaGalleryPreviewGridOverlay: View {
         Text(item.title)
             .font(.caption.weight(.semibold))
             .foregroundStyle(.white)
-            .padding(8)
+            .padding(PocketUISpacing.space2)
     }
 }
 
@@ -242,8 +242,8 @@ private struct MediaGalleryPageIndicator: View {
             .monospacedDigit()
             .foregroundStyle(.primary)
             .frame(minWidth: 64)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, PocketUISpacing.space3)
+            .padding(.vertical, PocketUISpacing.space2)
             .accessibilityLabel(Text("Page \(text)"))
     }
 }

@@ -3,6 +3,10 @@ import XCTest
 @testable import PocketUI
 
 final class MediaGalleryLayoutTests: XCTestCase {
+    func testStandardLayoutUsesPocketUISpacingToken() {
+        XCTAssertEqual(MediaGalleryLayout.standard.spacing, PocketUISpacing.space1)
+    }
+
     func testLayoutClampsInvalidValues() {
         let layout = MediaGalleryLayout(
             spacing: -4,

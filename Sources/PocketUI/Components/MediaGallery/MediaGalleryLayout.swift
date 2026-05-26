@@ -33,7 +33,7 @@ public struct MediaGalleryLayout: Hashable, Sendable {
     ///   - cellAspectRatio: 각 그리드 셀의 가로세로 비율입니다.
     ///   - showsScrollIndicators: 그리드 스크롤 뷰가 인디케이터를 표시할지 여부입니다.
     public init(
-        spacing: CGFloat = 4,
+        spacing: CGFloat = PocketUISpacing.space1,
         minimumColumnWidth: CGFloat = 110,
         maximumColumnWidth: CGFloat = 170,
         cellAspectRatio: CGFloat = 1,
