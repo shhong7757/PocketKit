@@ -1,3 +1,3 @@
 import PocketUI
 
-private let _docCToolsUsesPocketUI = MediaGalleryContentDisplayMode.self
+private let _docCToolsUsesPocketUI = GalleryLayout.ContentDisplayMode.self

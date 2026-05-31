@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "PocketKit",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v18),
         .macOS(.v15),
@@ -17,7 +18,10 @@ let package = Package(
     targets: [
         .target(
             name: "PocketUI",
-            path: "Sources/PocketUI"
+            path: "Sources/PocketUI",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "PocketUITests",
