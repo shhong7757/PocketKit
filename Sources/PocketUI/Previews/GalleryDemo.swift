@@ -146,93 +146,51 @@ private struct GalleryDemoDetailScreen: View {
     let zoomTransition: GalleryZoomTransition<GalleryDemoItem.ID>
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            if items.isEmpty {
+        GalleryDetailView(
+            items: items,
+            sourceItemID: sourceItemID,
+            activeItemID: $activeItemID,
+            zoomTransition: zoomTransition,
+            contentAspectRatio: \.aspectRatio,
+            onActiveItemChange: onActiveItemChange,
+            content: { item in
+                GalleryDemoPreviewTile(item: item)
+            },
+            emptyContent: {
                 ContentUnavailableView("No Media", systemImage: "photo")
-            } else {
-                TabView(selection: selectedItemID) {
-                    ForEach(items) { item in
-                        GalleryDemoPreviewTile(item: item)
-                            .aspectRatio(item.aspectRatio ?? 1, contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .tag(item.id)
-                    }
-                }
-                .modifier(GalleryDemoPagingTabViewStyleModifier())
             }
-        }
+        )
         .toolbar {
             GalleryDemoDetailToolbar(
-                pageIndicatorText: pageIndicatorText,
-                canMoveToPreviousItem: previousItemID != nil,
-                canMoveToNextItem: nextItemID != nil,
-                moveToPreviousItem: moveToPreviousItem,
-                moveToNextItem: moveToNextItem
+                pageIndicatorText: pageIndicatorText
             )
-        }
-        .onAppear {
-            showItem(sourceItemID)
-        }
-        .galleryZoomTransition(
-            fallbackSourceID: sourceItemID,
-            using: zoomTransition
-        )
-    }
-
-    private var selectedItemID: Binding<GalleryDemoItem.ID> {
-        Binding {
-            activeItemID ?? sourceItemID
-        } set: { itemID in
-            showItem(itemID)
         }
     }
 
     private var selectedIndex: Int? {
-        items.firstIndex { $0.id == selectedItemID.wrappedValue }
+        guard let selectedItemID else { return nil }
+
+        return items.firstIndex { $0.id == selectedItemID }
     }
 
-    private var previousItemID: GalleryDemoItem.ID? {
-        guard let selectedIndex, selectedIndex > items.startIndex else {
-            return nil
+    private var selectedItemID: GalleryDemoItem.ID? {
+        if let activeItemID,
+            items.contains(where: { $0.id == activeItemID })
+        {
+            return activeItemID
         }
 
-        return items[items.index(before: selectedIndex)].id
-    }
-
-    private var nextItemID: GalleryDemoItem.ID? {
-        guard let selectedIndex,
-            selectedIndex < items.index(before: items.endIndex)
-        else {
-            return nil
+        if items.contains(where: { $0.id == sourceItemID }) {
+            return sourceItemID
         }
 
-        return items[items.index(after: selectedIndex)].id
+        return items.first?.id
     }
 
     private var pageIndicatorText: String? {
         guard let selectedIndex else { return nil }
 
         return "\(selectedIndex + 1) / \(items.count)"
-    }
-
-    private func showItem(_ itemID: GalleryDemoItem.ID) {
-        activeItemID = itemID
-        onActiveItemChange(itemID)
-    }
-
-    private func moveToPreviousItem() {
-        guard let previousItemID else { return }
-
-        showItem(previousItemID)
-    }
-
-    private func moveToNextItem() {
-        guard let nextItemID else { return }
-
-        showItem(nextItemID)
     }
 }
 
@@ -373,10 +331,6 @@ private struct GalleryDemoSelectionToolbar: ToolbarContent {
 
 private struct GalleryDemoDetailToolbar: ToolbarContent {
     let pageIndicatorText: String?
-    let canMoveToPreviousItem: Bool
-    let canMoveToNextItem: Bool
-    let moveToPreviousItem: () -> Void
-    let moveToNextItem: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -422,17 +376,6 @@ private struct GalleryDemoPageIndicator: View {
             .padding(.horizontal, .space3)
             .padding(.vertical, .space2)
             .accessibilityLabel(Text("Page \(text)"))
-    }
-}
-
-private struct GalleryDemoPagingTabViewStyleModifier: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        #if os(iOS)
-            content.tabViewStyle(.page(indexDisplayMode: .never))
-        #else
-            content
-        #endif
     }
 }
 

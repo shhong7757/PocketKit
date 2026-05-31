@@ -19,6 +19,7 @@ PocketUI는 앱이 소유한 항목을 그리드로 보여주고, 앱 화면 안
 ### 갤러리
 
 - ``GalleryView``
+- ``GalleryDetailView``
 - ``GalleryLayout``
 - ``GalleryLayout/Insets``
 - ``GalleryLayout/ContentDisplayMode``

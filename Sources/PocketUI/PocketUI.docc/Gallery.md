@@ -56,6 +56,24 @@ GalleryView(
 }
 ```
 
+선택된 ID로 실제 항목이 필요하면 앱이 가지고 있는 데이터에서 다시 찾습니다.
+이렇게 하면 갤러리는 앱의 공유, 다운로드, PhotoKit, 파일 저장 방식을 몰라도 되고,
+앱은 선택된 항목을 자기 데이터 모델 그대로 사용할 수 있습니다.
+
+```swift
+private var selectedPhotos: [Photo] {
+    photos.filter { selectedIDs.contains($0.id) }
+}
+
+private func shareSelectedPhotos() {
+    share(photos: selectedPhotos)
+}
+
+private func downloadSelectedPhotos() async {
+    await downloader.download(photos: selectedPhotos)
+}
+```
+
 ```swift
 @State private var coverPhotoID: Photo.ID?
 
@@ -140,14 +158,12 @@ GalleryView(
 }
 ```
 
-### 상세 화면 전환 연결하기
+### 상세 화면 연결하기
 
 그리드 셀과 상세 화면을 같은 항목 ID로 연결하려면 ``GalleryZoomTransition``을
-전달합니다. `sourceID`는 전환의 기준이 될 항목 ID를 나타내며, 상세 화면에서
-페이지가 바뀔 때 같은 바인딩이 갱신되면 닫는 전환도 마지막으로 본 셀에
-연결됩니다. `galleryZoomTransition(fallbackSourceID:using:)`은
-`sourceID`가 아직 없을 때 navigation destination이 받은 ID를 fallback source로
-사용하며, `zoomTransition`을 전달하지 않으면 기본 navigation transition을 유지합니다.
+전달합니다. 상세 화면이 좌우 페이지 이동과 확대/축소를 제공하면
+``GalleryDetailView``를 navigation destination 안에서 사용할 수 있습니다.
+`activeItemID`는 현재 페이지와 닫는 줌 전환의 기준 항목으로 함께 갱신됩니다.
 
 ```swift
 @State private var activePhotoID: Photo.ID?
@@ -173,14 +189,77 @@ GalleryView(
     PhotoThumbnail(photo: photo)
 }
 .navigationDestination(for: Photo.ID.self) { sourceID in
-    PhotoDetailView(
-        photos: photos,
-        activePhotoID: $activePhotoID
-    )
-    .galleryZoomTransition(
-        fallbackSourceID: sourceID,
-        using: zoomTransition
-    )
+    GalleryDetailView(
+        items: photos,
+        sourceItemID: sourceID,
+        activeItemID: $activePhotoID,
+        zoomTransition: zoomTransition,
+        contentAspectRatio: \.aspectRatio,
+        onActiveItemChange: { photoID in
+            galleryScrollPosition.scrollTo(id: photoID, anchor: .center)
+        }
+    ) { photo in
+        PhotoDetailContent(photo: photo)
+    }
+}
+```
+
+상세 화면의 툴바처럼 현재 포커스된 항목이 필요할 때도 같은 방식으로
+`activeItemID`를 앱 데이터로 복원합니다. `activeItemID`는 페이지 이동에 맞춰
+갱신되므로, 공유나 다운로드 버튼은 현재 보이는 항목을 기준으로 동작할 수
+있습니다.
+
+```swift
+private var activePhoto: Photo? {
+    activePhotoID.flatMap { photoID in
+        photos.first { $0.id == photoID }
+    }
+}
+
+.navigationDestination(for: Photo.ID.self) { sourceID in
+    GalleryDetailView(
+        items: photos,
+        sourceItemID: sourceID,
+        activeItemID: $activePhotoID,
+        zoomTransition: zoomTransition,
+        contentAspectRatio: \.aspectRatio
+    ) { photo in
+        PhotoDetailContent(photo: photo)
+    }
+    .toolbar {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                guard let activePhoto else { return }
+
+                share(photo: activePhoto)
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+
+            Button {
+                guard let activePhoto else { return }
+
+                download(photo: activePhoto)
+            } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+        }
+    }
+}
+```
+
+데이터가 삭제되거나 페이지네이션 결과가 바뀌는 앱에서는 사라진 ID가 선택 상태에
+남지 않도록 앱 상태를 함께 정리합니다.
+
+```swift
+.onChange(of: photos.map(\.id)) { _, photoIDs in
+    let availablePhotoIDs = Set(photoIDs)
+
+    selectedIDs.formIntersection(availablePhotoIDs)
+
+    if let activePhotoID, !availablePhotoIDs.contains(activePhotoID) {
+        self.activePhotoID = photoIDs.first
+    }
 }
 ```
 
@@ -217,6 +296,7 @@ GalleryView(
 ### 주요 뷰
 
 - ``GalleryView``
+- ``GalleryDetailView``
 
 ### 레이아웃
 
