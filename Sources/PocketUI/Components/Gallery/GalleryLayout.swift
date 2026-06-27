@@ -58,7 +58,7 @@ public struct GalleryLayout: Hashable, Sendable {
         }
     }
 
-    /// 갤러리 컨테이너 안쪽 콘텐츠 둘레에 적용할 여백입니다.
+    /// 갤러리 컨테이너 안쪽 콘텐츠 둘레에 적용할 패딩입니다.
     public struct Insets: Hashable, Sendable {
         /// 위쪽 여백입니다.
         public let top: CGFloat
@@ -101,7 +101,7 @@ public struct GalleryLayout: Hashable, Sendable {
             )
         }
 
-        /// 갤러리 콘텐츠 여백을 만듭니다.
+        /// 갤러리 콘텐츠 패딩을 만듭니다.
         public init(
             top: CGFloat = 0,
             leading: CGFloat = 0,
@@ -112,6 +112,16 @@ public struct GalleryLayout: Hashable, Sendable {
             self.leading = leading
             self.bottom = bottom
             self.trailing = trailing
+        }
+
+        /// SwiftUI `EdgeInsets` 값으로 갤러리 콘텐츠 패딩을 만듭니다.
+        public init(_ edgeInsets: EdgeInsets) {
+            self.init(
+                top: edgeInsets.top,
+                leading: edgeInsets.leading,
+                bottom: edgeInsets.bottom,
+                trailing: edgeInsets.trailing
+            )
         }
 
         var resolved: Insets {
@@ -136,7 +146,7 @@ public struct GalleryLayout: Hashable, Sendable {
     }
 
     /// 그리드 항목 사이의 간격입니다.
-    public let spacing: CGFloat
+    public let gap: CGFloat
 
     /// 적응형 열의 최소 너비입니다.
     public let minimumColumnWidth: CGFloat
@@ -150,8 +160,20 @@ public struct GalleryLayout: Hashable, Sendable {
     /// 셀 안에서 항목 콘텐츠를 표시하는 방식입니다.
     public let contentMode: ContentDisplayMode
 
-    /// 갤러리 콘텐츠 둘레에 적용할 여백입니다.
-    public let contentInsets: Insets
+    /// 갤러리 콘텐츠 둘레에 적용할 패딩입니다.
+    public let contentPadding: Insets
+
+    /// 그리드 항목 사이의 간격입니다.
+    @available(*, deprecated, renamed: "gap")
+    public var spacing: CGFloat {
+        gap
+    }
+
+    /// 갤러리 콘텐츠 둘레에 적용할 패딩입니다.
+    @available(*, deprecated, renamed: "contentPadding")
+    public var contentInsets: Insets {
+        contentPadding
+    }
 
     /// 포함된 스크롤 뷰가 플랫폼 스크롤 인디케이터를 표시할지 여부입니다.
     public let showsScrollIndicators: Bool
@@ -161,10 +183,30 @@ public struct GalleryLayout: Hashable, Sendable {
 
     /// 갤러리 레이아웃을 만듭니다.
     ///
-    /// 값은 사용 전에 보정됩니다. 간격과 콘텐츠 여백은 0 이상으로, 열 너비는 양수로
+    /// 값은 사용 전에 보정됩니다. 간격과 콘텐츠 패딩은 0 이상으로, 열 너비는 양수로
     /// 보정되며 올바르지 않은 비율은 정사각형 셀로 대체됩니다.
     public init(
-        spacing: CGFloat = .space1,
+        gap: CGFloat = .space1,
+        minimumColumnWidth: CGFloat = 110,
+        maximumColumnWidth: CGFloat = 170,
+        cellAspectRatio: CGFloat = 1,
+        contentMode: ContentDisplayMode = .fill,
+        contentPadding: EdgeInsets? = nil,
+        showsScrollIndicators: Bool = false
+    ) {
+        self.gap = gap
+        self.minimumColumnWidth = minimumColumnWidth
+        self.maximumColumnWidth = maximumColumnWidth
+        self.cellAspectRatio = cellAspectRatio
+        self.contentMode = contentMode
+        self.contentPadding = contentPadding.map(Insets.init) ?? .all(gap)
+        self.showsScrollIndicators = showsScrollIndicators
+    }
+
+    /// 갤러리 레이아웃을 만듭니다.
+    @available(*, deprecated, message: "Use gap and contentPadding instead.")
+    public init(
+        spacing: CGFloat,
         minimumColumnWidth: CGFloat = 110,
         maximumColumnWidth: CGFloat = 170,
         cellAspectRatio: CGFloat = 1,
@@ -172,17 +214,40 @@ public struct GalleryLayout: Hashable, Sendable {
         contentInsets: Insets? = nil,
         showsScrollIndicators: Bool = false
     ) {
-        self.spacing = spacing
+        self.gap = spacing
         self.minimumColumnWidth = minimumColumnWidth
         self.maximumColumnWidth = maximumColumnWidth
         self.cellAspectRatio = cellAspectRatio
         self.contentMode = contentMode
-        self.contentInsets = contentInsets ?? .all(spacing)
+        self.contentPadding = contentInsets ?? .all(spacing)
         self.showsScrollIndicators = showsScrollIndicators
     }
 
+    /// 갤러리 레이아웃을 만듭니다.
+    @available(*, deprecated, message: "Use gap and contentPadding instead.")
+    public init(
+        minimumColumnWidth: CGFloat = 110,
+        maximumColumnWidth: CGFloat = 170,
+        cellAspectRatio: CGFloat = 1,
+        contentMode: ContentDisplayMode = .fill,
+        contentInsets: Insets,
+        showsScrollIndicators: Bool = false
+    ) {
+        self.gap = .space1
+        self.minimumColumnWidth = minimumColumnWidth
+        self.maximumColumnWidth = maximumColumnWidth
+        self.cellAspectRatio = cellAspectRatio
+        self.contentMode = contentMode
+        self.contentPadding = contentInsets
+        self.showsScrollIndicators = showsScrollIndicators
+    }
+
+    var resolvedGap: CGFloat {
+        nonNegativeFiniteValue(gap)
+    }
+
     var resolvedSpacing: CGFloat {
-        nonNegativeFiniteValue(spacing)
+        resolvedGap
     }
 
     var resolvedMinimumColumnWidth: CGFloat {
@@ -202,8 +267,12 @@ public struct GalleryLayout: Hashable, Sendable {
         positiveFiniteValue(cellAspectRatio) ?? 1
     }
 
+    var resolvedContentPadding: Insets {
+        contentPadding.resolved
+    }
+
     var resolvedContentInsets: Insets {
-        contentInsets.resolved
+        resolvedContentPadding
     }
 
     var columns: [GridItem] {
@@ -213,7 +282,7 @@ public struct GalleryLayout: Hashable, Sendable {
                     minimum: resolvedMinimumColumnWidth,
                     maximum: resolvedMaximumColumnWidth
                 ),
-                spacing: resolvedSpacing
+                spacing: resolvedGap
             )
         ]
     }

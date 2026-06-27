@@ -78,18 +78,18 @@ public struct GalleryView<
             if items.isEmpty {
                 emptyContent()
                     .frame(maxWidth: .infinity)
-                    .padding(layout.resolvedContentInsets.edgeInsets)
+                    .padding(layout.resolvedContentPadding.edgeInsets)
             } else {
                 LazyVGrid(
                     columns: layout.columns,
-                    spacing: layout.resolvedSpacing
+                    spacing: layout.resolvedGap
                 ) {
                     ForEach(items) { item in
                         galleryCell(for: item)
                     }
                 }
                 .scrollTargetLayout()
-                .padding(layout.resolvedContentInsets.edgeInsets)
+                .padding(layout.resolvedContentPadding.edgeInsets)
 
                 if pagination.isFetchingNextPage {
                     nextPageLoadingIndicator()
@@ -168,7 +168,7 @@ public struct GalleryView<
             .frame(maxWidth: .infinity)
             .padding(
                 .vertical,
-                max(.space3, layout.resolvedSpacing * 2)
+                max(.space3, layout.resolvedGap * 2)
             )
             .accessibilityLabel(
                 Text(GalleryAccessibilityText.fetchingNextPage)
@@ -176,12 +176,12 @@ public struct GalleryView<
     }
 }
 
-private extension GalleryView {
-    var canRequestNextPage: Bool {
+extension GalleryView {
+    fileprivate var canRequestNextPage: Bool {
         pagination.hasNextPage && !pagination.isFetchingNextPage
     }
 
-    func handleItemDidAppear(_ id: Item.ID) {
+    fileprivate func handleItemDidAppear(_ id: Item.ID) {
         if paginationState.recordAppearance(
             of: id,
             itemIDs: currentItemIDs,
@@ -192,16 +192,16 @@ private extension GalleryView {
         }
     }
 
-    func handleItemDidDisappear(_ id: Item.ID) {
+    fileprivate func handleItemDidDisappear(_ id: Item.ID) {
         paginationState.recordDisappearance(of: id)
     }
 
-    func handleItemIDsChange(to itemIDs: [Item.ID]) {
+    fileprivate func handleItemIDsChange(to itemIDs: [Item.ID]) {
         paginationState.syncVisibleItems(with: itemIDs)
         requestNextPageIfNeeded()
     }
 
-    func handleHasNextPageChange(
+    fileprivate func handleHasNextPageChange(
         from oldValue: Bool,
         to newValue: Bool
     ) {
@@ -211,7 +211,7 @@ private extension GalleryView {
         requestNextPageIfNeeded()
     }
 
-    func handleIsFetchingNextPageChange(
+    fileprivate func handleIsFetchingNextPageChange(
         from oldValue: Bool,
         to newValue: Bool
     ) {
@@ -221,7 +221,7 @@ private extension GalleryView {
         requestNextPageIfNeeded()
     }
 
-    func requestNextPageIfNeeded() {
+    fileprivate func requestNextPageIfNeeded() {
         if paginationState.requestNextPageIfNeeded(
             itemIDs: currentItemIDs,
             canRequestNextPage: canRequestNextPage,

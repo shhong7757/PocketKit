@@ -84,13 +84,14 @@ extension GalleryPagination {
             canRequestNextPage: Bool,
             threshold: Int = 1
         ) -> Bool {
-            guard visibleItemIDs.contains(where: { id in
-                isPrefetchTrigger(
-                    id,
-                    itemIDs: itemIDs,
-                    threshold: threshold
-                )
-            })
+            guard
+                visibleItemIDs.contains(where: { id in
+                    isPrefetchTrigger(
+                        id,
+                        itemIDs: itemIDs,
+                        threshold: threshold
+                    )
+                })
             else {
                 return false
             }
@@ -107,11 +108,13 @@ extension GalleryPagination {
             threshold: Int
         ) -> Bool {
             guard canRequestNextPage else { return false }
-            guard isPrefetchTrigger(
-                visibleID,
-                itemIDs: itemIDs,
-                threshold: threshold
-            ) else {
+            guard
+                isPrefetchTrigger(
+                    visibleID,
+                    itemIDs: itemIDs,
+                    threshold: threshold
+                )
+            else {
                 return false
             }
 
@@ -121,9 +124,11 @@ extension GalleryPagination {
         private mutating func markPageBoundaryRequestedIfNeeded(
             itemIDs: [ID]
         ) -> Bool {
-            guard let pageBoundary = GalleryPaginationPageBoundary(
-                itemIDs: itemIDs
-            ) else {
+            guard
+                let pageBoundary = GalleryPaginationPageBoundary(
+                    itemIDs: itemIDs
+                )
+            else {
                 return false
             }
 

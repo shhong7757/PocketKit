@@ -25,14 +25,14 @@ public struct GalleryZoomTransition<ID: Hashable> {
     }
 }
 
-public extension View {
+extension View {
     /// ``GalleryZoomTransition``으로 연결된 상세 화면 내비게이션 전환을 적용합니다.
     ///
     /// `zoomTransition`이 `nil`이면 기본 내비게이션 전환을 유지합니다.
     /// `fallbackSourceID`는 `zoomTransition.sourceID`가 아직 설정되지 않았을 때 사용할
     /// 대체 소스 ID입니다.
     @ViewBuilder
-    func galleryZoomTransition<ID: Hashable>(
+    public func galleryZoomTransition<ID: Hashable>(
         fallbackSourceID: ID,
         using zoomTransition: GalleryZoomTransition<ID>?
     ) -> some View {

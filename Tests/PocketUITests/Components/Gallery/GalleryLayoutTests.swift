@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 
 @testable import PocketUI
@@ -5,11 +6,11 @@ import XCTest
 final class GalleryLayoutTests: XCTestCase {
     func testLayoutResolvesInvalidValuesToSafeGridInputs() {
         let layout = GalleryLayout(
-            spacing: -4,
+            gap: -4,
             minimumColumnWidth: -10,
             maximumColumnWidth: 0,
             cellAspectRatio: 0,
-            contentInsets: GalleryLayout.Insets(
+            contentPadding: EdgeInsets(
                 top: -1,
                 leading: -2,
                 bottom: -3,
@@ -17,11 +18,11 @@ final class GalleryLayoutTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(layout.resolvedSpacing, 0)
+        XCTAssertEqual(layout.resolvedGap, 0)
         XCTAssertEqual(layout.resolvedMinimumColumnWidth, 1)
         XCTAssertEqual(layout.resolvedMaximumColumnWidth, 1)
         XCTAssertEqual(layout.resolvedCellAspectRatio, 1)
-        XCTAssertEqual(layout.resolvedContentInsets, .zero)
+        XCTAssertEqual(layout.resolvedContentPadding, .zero)
     }
 
     func testLayoutKeepsMaximumColumnWidthAtLeastMinimumColumnWidth() {

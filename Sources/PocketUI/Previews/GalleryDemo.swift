@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 
@@ -174,11 +175,13 @@ private struct GalleryDemoDetailScreen: View {
     }
 
     private var selectedItemID: GalleryDemoItem.ID? {
+        // swiftlint:disable opening_brace
         if let activeItemID,
             items.contains(where: { $0.id == activeItemID })
         {
             return activeItemID
         }
+        // swiftlint:enable opening_brace
 
         if items.contains(where: { $0.id == sourceItemID }) {
             return sourceItemID
@@ -271,7 +274,7 @@ private enum GalleryDemoGridDensity: CaseIterable, Identifiable {
             )
         case .dense:
             return GalleryLayout(
-                spacing: .space0_5,
+                gap: .space0p5,
                 minimumColumnWidth: 88,
                 maximumColumnWidth: 132,
                 contentMode: contentMode
