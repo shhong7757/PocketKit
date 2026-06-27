@@ -181,6 +181,16 @@ public struct GalleryLayout: Hashable, Sendable {
     /// PocketUI의 기본 갤러리 레이아웃입니다.
     public static let standard = GalleryLayout()
 
+    /// 바깥 세로 패딩을 줄인 갤러리 레이아웃입니다.
+    public static let compact = GalleryLayout(
+        contentPadding: EdgeInsets(
+            top: 0,
+            leading: .space1,
+            bottom: 0,
+            trailing: .space1
+        )
+    )
+
     /// 갤러리 레이아웃을 만듭니다.
     ///
     /// 값은 사용 전에 보정됩니다. 간격과 콘텐츠 패딩은 0 이상으로, 열 너비는 양수로

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 
@@ -6,7 +7,9 @@ public struct GalleryView<
     Item: Identifiable,
     Content: View,
     OverlayContent: View,
-    EmptyContent: View
+    EmptyContent: View,
+    HeaderContent: View,
+    FooterContent: View
 >: View {
     private let items: [Item]
     private let selection: GallerySelection<Item.ID>
@@ -18,9 +21,11 @@ public struct GalleryView<
     private let pagination: GalleryPagination
     private let onRefresh: (@Sendable () async -> Void)?
     private let onTap: ((Item) -> Void)?
+    private let headerContent: () -> HeaderContent
     private let content: (Item) -> Content
     private let overlayContent: (Item) -> OverlayContent
     private let emptyContent: () -> EmptyContent
+    private let footerContent: () -> FooterContent
 
     @State private var paginationState =
         GalleryPagination.State<Item.ID>()
@@ -54,9 +59,11 @@ public struct GalleryView<
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
+        @ViewBuilder headerContent: @escaping () -> HeaderContent,
         @ViewBuilder content: @escaping (Item) -> Content,
         @ViewBuilder overlayContent: @escaping (Item) -> OverlayContent,
-        @ViewBuilder emptyContent: @escaping () -> EmptyContent
+        @ViewBuilder emptyContent: @escaping () -> EmptyContent,
+        @ViewBuilder footerContent: @escaping () -> FooterContent
     ) {
         self.items = items
         self.selection = selection
@@ -68,33 +75,42 @@ public struct GalleryView<
         self.pagination = pagination
         self.onRefresh = onRefresh
         self.onTap = onTap
+        self.headerContent = headerContent
         self.content = content
         self.overlayContent = overlayContent
         self.emptyContent = emptyContent
+        self.footerContent = footerContent
     }
 
     public var body: some View {
         ScrollView {
-            if items.isEmpty {
-                emptyContent()
+            VStack(spacing: 0) {
+                headerContent()
                     .frame(maxWidth: .infinity)
-                    .padding(layout.resolvedContentPadding.edgeInsets)
-            } else {
-                LazyVGrid(
-                    columns: layout.columns,
-                    spacing: layout.resolvedGap
-                ) {
-                    ForEach(items) { item in
-                        galleryCell(for: item)
+
+                if items.isEmpty {
+                    emptyContent()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    LazyVGrid(
+                        columns: layout.columns,
+                        spacing: layout.resolvedGap
+                    ) {
+                        ForEach(items) { item in
+                            galleryCell(for: item)
+                        }
+                    }
+                    .scrollTargetLayout()
+
+                    if pagination.isFetchingNextPage {
+                        nextPageLoadingIndicator()
                     }
                 }
-                .scrollTargetLayout()
-                .padding(layout.resolvedContentPadding.edgeInsets)
 
-                if pagination.isFetchingNextPage {
-                    nextPageLoadingIndicator()
-                }
+                footerContent()
+                    .frame(maxWidth: .infinity)
             }
+            .padding(layout.resolvedContentPadding.edgeInsets)
         }
         .modifier(GalleryScrollPositionModifier(scrollPosition: scrollPosition))
         .modifier(GalleryPullToRefreshModifier(onRefresh: onRefresh))
@@ -232,8 +248,46 @@ extension GalleryView {
     }
 }
 
-extension GalleryView where OverlayContent == EmptyView {
-    /// 오버레이 콘텐츠 없이 갤러리를 만듭니다.
+extension GalleryView where HeaderContent == EmptyView, FooterContent == EmptyView {
+    /// 헤더와 푸터 콘텐츠 없이 갤러리를 만듭니다.
+    public init(
+        items: [Item],
+        selection: GallerySelection<Item.ID> = .none,
+        layout: GalleryLayout = .standard,
+        zoomTransition: GalleryZoomTransition<Item.ID>? = nil,
+        scrollPosition: Binding<ScrollPosition>? = nil,
+        contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
+        accessibilityLabel: @escaping (Item) -> String,
+        pagination: GalleryPagination = .disabled,
+        onRefresh: (@Sendable () async -> Void)? = nil,
+        onTap: ((Item) -> Void)? = nil,
+        @ViewBuilder content: @escaping (Item) -> Content,
+        @ViewBuilder overlayContent: @escaping (Item) -> OverlayContent,
+        @ViewBuilder emptyContent: @escaping () -> EmptyContent
+    ) {
+        self.init(
+            items: items,
+            selection: selection,
+            layout: layout,
+            zoomTransition: zoomTransition,
+            scrollPosition: scrollPosition,
+            contentAspectRatio: contentAspectRatio,
+            accessibilityLabel: accessibilityLabel,
+            pagination: pagination,
+            onRefresh: onRefresh,
+            onTap: onTap,
+            headerContent: { EmptyView() },
+            content: content,
+            overlayContent: overlayContent,
+            emptyContent: emptyContent,
+            footerContent: { EmptyView() }
+        )
+    }
+}
+
+extension GalleryView
+where OverlayContent == EmptyView, HeaderContent == EmptyView, FooterContent == EmptyView {
+    /// 오버레이, 헤더, 푸터 콘텐츠 없이 갤러리를 만듭니다.
     public init(
         items: [Item],
         selection: GallerySelection<Item.ID> = .none,
@@ -259,15 +313,18 @@ extension GalleryView where OverlayContent == EmptyView {
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
+            headerContent: { EmptyView() },
             content: content,
             overlayContent: { _ in EmptyView() },
-            emptyContent: emptyContent
+            emptyContent: emptyContent,
+            footerContent: { EmptyView() }
         )
     }
 }
 
-extension GalleryView where EmptyContent == EmptyView {
-    /// 빈 상태 콘텐츠 없이 갤러리를 만듭니다.
+extension GalleryView
+where EmptyContent == EmptyView, HeaderContent == EmptyView, FooterContent == EmptyView {
+    /// 빈 상태, 헤더, 푸터 콘텐츠 없이 갤러리를 만듭니다.
     public init(
         items: [Item],
         selection: GallerySelection<Item.ID> = .none,
@@ -293,15 +350,24 @@ extension GalleryView where EmptyContent == EmptyView {
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
+            headerContent: { EmptyView() },
             content: content,
             overlayContent: overlayContent,
-            emptyContent: { EmptyView() }
+            emptyContent: { EmptyView() },
+            footerContent: { EmptyView() }
         )
     }
 }
 
-extension GalleryView where OverlayContent == EmptyView, EmptyContent == EmptyView {
-    /// 빈 상태 콘텐츠 없이 갤러리를 만듭니다.
+// swiftlint:disable opening_brace
+extension GalleryView
+where
+    OverlayContent == EmptyView,
+    EmptyContent == EmptyView,
+    HeaderContent == EmptyView,
+    FooterContent == EmptyView
+{
+    /// 오버레이, 빈 상태, 헤더, 푸터 콘텐츠 없이 갤러리를 만듭니다.
     public init(
         items: [Item],
         selection: GallerySelection<Item.ID> = .none,
@@ -326,9 +392,123 @@ extension GalleryView where OverlayContent == EmptyView, EmptyContent == EmptyVi
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
+            headerContent: { EmptyView() },
             content: content,
             overlayContent: { _ in EmptyView() },
-            emptyContent: { EmptyView() }
+            emptyContent: { EmptyView() },
+            footerContent: { EmptyView() }
+        )
+    }
+}
+// swiftlint:enable opening_brace
+
+extension GalleryView
+where OverlayContent == EmptyView, EmptyContent == EmptyView, HeaderContent == EmptyView {
+    /// 푸터 콘텐츠가 있는 갤러리를 만듭니다.
+    public init(
+        items: [Item],
+        selection: GallerySelection<Item.ID> = .none,
+        layout: GalleryLayout = .standard,
+        zoomTransition: GalleryZoomTransition<Item.ID>? = nil,
+        scrollPosition: Binding<ScrollPosition>? = nil,
+        contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
+        accessibilityLabel: @escaping (Item) -> String,
+        pagination: GalleryPagination = .disabled,
+        onRefresh: (@Sendable () async -> Void)? = nil,
+        onTap: ((Item) -> Void)? = nil,
+        @ViewBuilder content: @escaping (Item) -> Content,
+        @ViewBuilder footerContent: @escaping () -> FooterContent
+    ) {
+        self.init(
+            items: items,
+            selection: selection,
+            layout: layout,
+            zoomTransition: zoomTransition,
+            scrollPosition: scrollPosition,
+            contentAspectRatio: contentAspectRatio,
+            accessibilityLabel: accessibilityLabel,
+            pagination: pagination,
+            onRefresh: onRefresh,
+            onTap: onTap,
+            headerContent: { EmptyView() },
+            content: content,
+            overlayContent: { _ in EmptyView() },
+            emptyContent: { EmptyView() },
+            footerContent: footerContent
+        )
+    }
+}
+
+extension GalleryView
+where OverlayContent == EmptyView, EmptyContent == EmptyView, FooterContent == EmptyView {
+    /// 헤더 콘텐츠가 있는 갤러리를 만듭니다.
+    public init(
+        items: [Item],
+        selection: GallerySelection<Item.ID> = .none,
+        layout: GalleryLayout = .standard,
+        zoomTransition: GalleryZoomTransition<Item.ID>? = nil,
+        scrollPosition: Binding<ScrollPosition>? = nil,
+        contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
+        accessibilityLabel: @escaping (Item) -> String,
+        pagination: GalleryPagination = .disabled,
+        onRefresh: (@Sendable () async -> Void)? = nil,
+        onTap: ((Item) -> Void)? = nil,
+        @ViewBuilder headerContent: @escaping () -> HeaderContent,
+        @ViewBuilder content: @escaping (Item) -> Content
+    ) {
+        self.init(
+            items: items,
+            selection: selection,
+            layout: layout,
+            zoomTransition: zoomTransition,
+            scrollPosition: scrollPosition,
+            contentAspectRatio: contentAspectRatio,
+            accessibilityLabel: accessibilityLabel,
+            pagination: pagination,
+            onRefresh: onRefresh,
+            onTap: onTap,
+            headerContent: headerContent,
+            content: content,
+            overlayContent: { _ in EmptyView() },
+            emptyContent: { EmptyView() },
+            footerContent: { EmptyView() }
+        )
+    }
+}
+
+extension GalleryView where OverlayContent == EmptyView, EmptyContent == EmptyView {
+    /// 헤더와 푸터 콘텐츠가 있는 갤러리를 만듭니다.
+    public init(
+        items: [Item],
+        selection: GallerySelection<Item.ID> = .none,
+        layout: GalleryLayout = .standard,
+        zoomTransition: GalleryZoomTransition<Item.ID>? = nil,
+        scrollPosition: Binding<ScrollPosition>? = nil,
+        contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
+        accessibilityLabel: @escaping (Item) -> String,
+        pagination: GalleryPagination = .disabled,
+        onRefresh: (@Sendable () async -> Void)? = nil,
+        onTap: ((Item) -> Void)? = nil,
+        @ViewBuilder headerContent: @escaping () -> HeaderContent,
+        @ViewBuilder content: @escaping (Item) -> Content,
+        @ViewBuilder footerContent: @escaping () -> FooterContent
+    ) {
+        self.init(
+            items: items,
+            selection: selection,
+            layout: layout,
+            zoomTransition: zoomTransition,
+            scrollPosition: scrollPosition,
+            contentAspectRatio: contentAspectRatio,
+            accessibilityLabel: accessibilityLabel,
+            pagination: pagination,
+            onRefresh: onRefresh,
+            onTap: onTap,
+            headerContent: headerContent,
+            content: content,
+            overlayContent: { _ in EmptyView() },
+            emptyContent: { EmptyView() },
+            footerContent: footerContent
         )
     }
 }

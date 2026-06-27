@@ -25,6 +25,22 @@ final class GalleryLayoutTests: XCTestCase {
         XCTAssertEqual(layout.resolvedContentPadding, .zero)
     }
 
+    func testCompactLayoutUsesReducedVerticalPadding() {
+        let layout = GalleryLayout.compact
+
+        XCTAssertEqual(layout.gap, .space1)
+        XCTAssertEqual(layout.minimumColumnWidth, 110)
+        XCTAssertEqual(layout.maximumColumnWidth, 170)
+        XCTAssertEqual(
+            layout.contentPadding,
+            GalleryLayout.Insets(
+                top: 0,
+                leading: .space1,
+                bottom: 0,
+                trailing: .space1
+            ))
+    }
+
     func testLayoutKeepsMaximumColumnWidthAtLeastMinimumColumnWidth() {
         let layout = GalleryLayout(
             minimumColumnWidth: 160,
