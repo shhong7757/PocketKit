@@ -13,6 +13,18 @@ let package = Package(
         .library(
             name: "PocketUI",
             targets: ["PocketUI"]
+        ),
+        .library(
+            name: "PocketStorage",
+            targets: ["PocketStorage"]
+        ),
+        .library(
+            name: "PocketStorageObservation",
+            targets: ["PocketStorageObservation"]
+        ),
+        .library(
+            name: "PocketStorageUI",
+            targets: ["PocketStorageUI"]
         )
     ],
     targets: [
@@ -23,9 +35,31 @@ let package = Package(
                 .process("Resources")
             ]
         ),
+        .target(
+            name: "PocketStorage",
+            path: "Sources/PocketStorage"
+        ),
+        .target(
+            name: "PocketStorageObservation",
+            dependencies: ["PocketStorage"],
+            path: "Sources/PocketStorageObservation"
+        ),
+        .target(
+            name: "PocketStorageUI",
+            dependencies: ["PocketStorage"],
+            path: "Sources/PocketStorageUI"
+        ),
         .testTarget(
             name: "PocketUITests",
             dependencies: ["PocketUI"]
+        ),
+        .testTarget(
+            name: "PocketStorageTests",
+            dependencies: ["PocketStorage", "PocketStorageObservation"]
+        ),
+        .testTarget(
+            name: "PocketStorageUITests",
+            dependencies: ["PocketStorage", "PocketStorageUI"]
         ),
     ]
 )
