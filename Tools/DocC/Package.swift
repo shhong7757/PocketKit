@@ -19,7 +19,8 @@ let package = Package(
         .target(
             name: "DocCTools",
             dependencies: [
-                .product(name: "PocketUI", package: "PocketKit")
+                .product(name: "PocketUI", package: "PocketKit"),
+                .product(name: "PocketStorage", package: "PocketKit")
             ]
         )
     ]

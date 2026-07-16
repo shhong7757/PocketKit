@@ -2,43 +2,7 @@ import Foundation
 import Testing
 
 @testable import PocketStorage
-@testable import PocketStorageObservation
 
-private actor DelayedKeyValueStore: KeyValueStore {
-    private var values: [String: Data] = [:]
-
-    func value<Value: Codable & Sendable>(for key: StorageKey<Value>) async throws -> Value? {
-        guard let data = values[key.name] else { return nil }
-        return try JSONDecoder().decode(Value.self, from: data)
-    }
-
-    func set<Value: Codable & Sendable>(
-        _ value: Value?,
-        for key: StorageKey<Value>
-    ) async throws {
-        guard let value else {
-            values.removeValue(forKey: key.name)
-            return
-        }
-
-        if (value as? Bool) == true {
-            do {
-                try await Task.sleep(nanoseconds: 50_000_000)
-            } catch {
-                // The store deliberately completes a cancelled write so the
-                // observable must wait for the underlying operation to finish.
-            }
-        }
-
-        values[key.name] = try JSONEncoder().encode(value)
-    }
-
-    func remove<Value: Codable & Sendable>(_ key: StorageKey<Value>) async {
-        values.removeValue(forKey: key.name)
-    }
-}
-
-@MainActor
 struct PocketStorageTests {
     private struct CodableFixture: Codable, Equatable, Sendable {
         let name: String
@@ -50,256 +14,244 @@ struct PocketStorageTests {
         case dark
     }
 
-    @MainActor
-    private final class EventBox {
-        var count = 0
+    private enum StoreKeys {
+        static let count = PocketStoreKey<Int>("fixture.count")
+        static let model = PocketStoreKey<CodableFixture>("fixture.model")
+    }
+
+    private enum EncodingFailure: Error {
+        case failed
+    }
+
+    private struct EncodingFailureFixture: Codable, Sendable {
+        init() {}
+
+        init(from decoder: Decoder) throws {
+            self.init()
+        }
+
+        func encode(to encoder: Encoder) throws {
+            throw EncodingFailure.failed
+        }
+    }
+
+    private struct IsolatedStore {
+        let suiteName: String
+        let userDefaults: UserDefaults
+        let store: PocketStore
+
+        func cleanup() {
+            userDefaults.removePersistentDomain(forName: suiteName)
+        }
+    }
+
+    private func makeIsolatedStore() -> IsolatedStore {
+        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+
+        return IsolatedStore(
+            suiteName: suiteName,
+            userDefaults: userDefaults,
+            store: PocketStore(identifier: suiteName)
+        )
     }
 
     @Test
-    func changeObserverReceivesChangesForSameBackingUserDefaults() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let notificationCenter = NotificationCenter()
-        let observedStore = UserDefaultsStore(
-            suiteName: suiteName,
-            notificationCenter: notificationCenter
-        )
-        let writingStore = UserDefaultsStore(
-            suiteName: suiteName,
-            notificationCenter: notificationCenter
-        )
-        let key = StorageKey<Bool>("fixture.isEnabled")
-        let events = EventBox()
-        let observer = KeyValueStoreChangeObserver(store: observedStore, keyName: key.name) {
-            events.count += 1
-        }
-
+    func pocketStoreRoundTripsValues() async throws {
+        let isolatedStore = makeIsolatedStore()
         defer {
-            _ = observer
-            userDefaults.removePersistentDomain(forName: suiteName)
+            isolatedStore.cleanup()
         }
 
-        try await writingStore.set(true, for: key)
-        for _ in 0..<10 {
-            await Task.yield()
-        }
+        let store = isolatedStore.store
 
-        #expect(events.count == 1)
-    }
-
-    @Test
-    func userDefaultsStoreRoundTripsPrimitiveAndCodableValues() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let store = UserDefaultsStore(suiteName: suiteName)
-
-        defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
-        }
-
-        let primitiveKey = StorageKey<Int>("fixture.count")
-        let codableKey = StorageKey<CodableFixture>("fixture.model")
+        let primitiveKey = "fixture.count"
+        let codableKey = "fixture.model"
         let fixture = CodableFixture(name: "Pocket", count: 3)
 
-        try await store.set(42, for: primitiveKey)
-        try await store.set(fixture, for: codableKey)
+        try await store.set(42, forKey: primitiveKey)
+        try await store.set(fixture, forKey: codableKey)
 
-        #expect(try await store.value(for: primitiveKey) == 42)
-        #expect(try await store.value(for: codableKey) == fixture)
+        #expect(try await store.value(forKey: primitiveKey, as: Int.self) == 42)
+        #expect(try await store.value(forKey: codableKey, as: CodableFixture.self) == fixture)
+    }
+
+    @Test
+    func typedKeysRoundTripValues() async throws {
+        let isolatedStore = makeIsolatedStore()
+        defer {
+            isolatedStore.cleanup()
+        }
+
+        let store = isolatedStore.store
+        let fixture = CodableFixture(name: "Pocket", count: 3)
+
+        try await store.set(42, forKey: StoreKeys.count)
+        try await store.set(fixture, forKey: StoreKeys.model)
+
+        #expect(try await store.value(forKey: StoreKeys.count) == 42)
+        #expect(try await store.value(forKey: StoreKeys.model) == fixture)
+    }
+
+    @Test
+    func readingValueAsDifferentTypeThrowsDecodingFailed() async throws {
+        let isolatedStore = makeIsolatedStore()
+        let key = "fixture.isEnabled"
+
+        defer {
+            isolatedStore.cleanup()
+        }
+
+        let store = isolatedStore.store
+
+        try await store.set(true, forKey: key)
+
+        do {
+            _ = try await store.value(forKey: key, as: String.self)
+            Issue.record("Expected reading a value as a different type to throw")
+        } catch let error as PocketStoreError {
+            guard case let .decodingFailed(failedKey, _) = error,
+                  failedKey == key else {
+                Issue.record("Expected a decodingFailed error for the requested key")
+                return
+            }
+        } catch {
+            Issue.record("Expected a PocketStoreError.decodingFailed error")
+        }
+    }
+
+    @Test
+    func readingMissingValueReturnsNil() async throws {
+        let isolatedStore = makeIsolatedStore()
+        defer {
+            isolatedStore.cleanup()
+        }
+
+        #expect(try await isolatedStore.store.value(forKey: "fixture.missing", as: Int.self) == nil)
+    }
+
+    @Test
+    func valueWithDefaultReturnsStoredValueOrDefault() async throws {
+        let isolatedStore = makeIsolatedStore()
+        defer {
+            isolatedStore.cleanup()
+        }
+
+        let key = "fixture.isEnabled"
+        let store = isolatedStore.store
+
+        #expect(try await store.value(forKey: key, default: false) == false)
+
+        try await store.set(true, forKey: key)
+
+        #expect(try await store.value(forKey: key, default: false) == true)
+    }
+
+    @Test
+    func encodingFailureThrowsEncodingFailed() async throws {
+        let isolatedStore = makeIsolatedStore()
+        let key = "fixture.encodingFailure"
+
+        defer {
+            isolatedStore.cleanup()
+        }
+
+        let store = isolatedStore.store
+
+        do {
+            try await store.set(EncodingFailureFixture(), forKey: key)
+            Issue.record("Expected encoding to fail")
+        } catch let error as PocketStoreError {
+            guard case let .encodingFailed(failedKey, _) = error,
+                  failedKey == key else {
+                Issue.record("Expected an encodingFailed error for the requested key")
+                return
+            }
+        } catch {
+            Issue.record("Expected a PocketStoreError.encodingFailed error")
+        }
     }
 
     @Test
     func removeDeletesPersistedValue() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let store = UserDefaultsStore(suiteName: suiteName)
-        let key = StorageKey<Int>("fixture.count")
+        let isolatedStore = makeIsolatedStore()
+        let key = "fixture.count"
 
         defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
+            isolatedStore.cleanup()
         }
 
-        try await store.set(42, for: key)
-        await store.remove(key)
+        let store = isolatedStore.store
 
-        #expect(try await store.value(for: key) == nil)
+        try await store.set(42, forKey: key)
+        await store.remove(forKey: key)
+
+        #expect(try await store.value(forKey: key, as: Int.self) == nil)
     }
 
     @Test
     func malformedCodableDataThrowsDecodingError() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let key = StorageKey<CodableFixture>("fixture.model")
+        let isolatedStore = makeIsolatedStore()
+        let key = "fixture.model"
 
         defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
+            isolatedStore.cleanup()
         }
 
-        userDefaults.set(Data("not-json".utf8), forKey: key.name)
-        let store = UserDefaultsStore(suiteName: suiteName)
+        isolatedStore.userDefaults.set(Data("not-json".utf8), forKey: key)
+        let store = isolatedStore.store
 
         do {
-            _ = try await store.value(for: key)
+            _ = try await store.value(forKey: key, as: CodableFixture.self)
             Issue.record("Expected malformed Codable data to throw")
-        } catch let error as PocketStorageError {
+        } catch let error as PocketStoreError {
             guard case .decodingFailed = error else {
                 Issue.record("Expected a decodingFailed error")
                 return
             }
+        } catch {
+            Issue.record("Expected a PocketStoreError.decodingFailed error")
         }
     }
 
     @Test
     func codableEnumRoundTripsAsValue() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let store = UserDefaultsStore(suiteName: suiteName)
-        let key = StorageKey<Theme>("fixture.theme")
+        let isolatedStore = makeIsolatedStore()
+        let key = "fixture.theme"
 
         defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
+            isolatedStore.cleanup()
         }
 
-        try await store.set(.dark, for: key)
+        let store = isolatedStore.store
 
-        #expect(try await store.value(for: key) == .dark)
+        try await store.set(Theme.dark, forKey: key)
+
+        #expect(try await store.value(forKey: key, as: Theme.self) == .dark)
     }
 
     @Test
     func actorStoreHandlesConcurrentWritesToIndependentKeys() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let store = UserDefaultsStore(suiteName: suiteName)
-
+        let isolatedStore = makeIsolatedStore()
         defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
+            isolatedStore.cleanup()
         }
 
-        let keys = (0..<50).map { StorageKey<Int>("fixture.count.\($0)") }
+        let store = isolatedStore.store
+
+        let keys = (0..<50).map { "fixture.count.\($0)" }
 
         await withTaskGroup(of: Void.self) { group in
             for (index, key) in keys.enumerated() {
                 group.addTask {
-                    try? await store.set(index, for: key)
+                    try? await store.set(index, forKey: key)
                 }
             }
         }
 
         for (index, key) in keys.enumerated() {
-            #expect(try await store.value(for: key) == index)
+            #expect(try await store.value(forKey: key, as: Int.self) == index)
         }
-    }
-
-    @Test
-    func notificationsDoNotCrossDifferentUserDefaultsStores() async throws {
-        let firstSuiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let secondSuiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let firstDefaults = UserDefaults(suiteName: firstSuiteName)!
-        let secondDefaults = UserDefaults(suiteName: secondSuiteName)!
-        let notificationCenter = NotificationCenter()
-
-        defer {
-            firstDefaults.removePersistentDomain(forName: firstSuiteName)
-            secondDefaults.removePersistentDomain(forName: secondSuiteName)
-        }
-
-        let observedStore = UserDefaultsStore(
-            suiteName: firstSuiteName,
-            notificationCenter: notificationCenter
-        )
-        let writingStore = UserDefaultsStore(
-            suiteName: secondSuiteName,
-            notificationCenter: notificationCenter
-        )
-        let key = StorageKey<Bool>("fixture.isEnabled")
-        let value = ObservableStoredValue(
-            key: key,
-            defaultValue: false,
-            store: observedStore
-        )
-
-        try await writingStore.set(true, for: key)
-        for _ in 0..<10 {
-            await Task.yield()
-        }
-
-        #expect(value.value == false)
-    }
-
-    @Test
-    func observableValueReflectsWritesFromAnotherStore() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-        let notificationCenter = NotificationCenter()
-
-        defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
-        }
-
-        let observedStore = UserDefaultsStore(
-            suiteName: suiteName,
-            notificationCenter: notificationCenter
-        )
-        let writingStore = UserDefaultsStore(
-            suiteName: suiteName,
-            notificationCenter: notificationCenter
-        )
-        let key = StorageKey<Bool>("fixture.isEnabled")
-        let value = ObservableStoredValue(
-            key: key,
-            defaultValue: false,
-            store: observedStore
-        )
-
-        #expect(value.value == false)
-
-        try await writingStore.set(true, for: key)
-        for _ in 0..<10 {
-            await Task.yield()
-        }
-
-        #expect(value.value == true)
-    }
-
-    @Test
-    func observableValueAssignmentPersistsValue() async throws {
-        let suiteName = "PocketStorageTests.\(UUID().uuidString)"
-        let userDefaults = UserDefaults(suiteName: suiteName)!
-
-        defer {
-            userDefaults.removePersistentDomain(forName: suiteName)
-        }
-
-        let store = UserDefaultsStore(suiteName: suiteName)
-        let key = StorageKey<Bool>("fixture.isEnabled")
-        let value = ObservableStoredValue(key: key, defaultValue: false, store: store)
-
-        value.value = true
-        for _ in 0..<10 {
-            await Task.yield()
-        }
-
-        #expect(try await store.value(for: key) == true)
-    }
-
-    @Test
-    func observableValuePersistsLatestRapidAssignment() async throws {
-        let store = DelayedKeyValueStore()
-        let key = StorageKey<Bool>("fixture.isEnabled")
-        let value = ObservableStoredValue(
-            key: key,
-            defaultValue: false,
-            store: store
-        )
-
-        value.value = true
-        await Task.yield()
-        value.value = false
-
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        #expect(try await store.value(for: key) == false)
-        #expect(value.value == false)
     }
 
 }

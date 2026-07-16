@@ -1,6 +1,4 @@
-import Foundation
-
-public struct StorageKey<Value: Codable & Sendable>: Hashable, Sendable {
+public struct PocketStoreKey<Value: Codable & Sendable>: Sendable {
     public let name: String
 
     public init(_ name: String) {
