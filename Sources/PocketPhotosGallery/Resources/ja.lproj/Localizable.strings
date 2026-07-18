@@ -1,0 +1,5 @@
+"mediaGallery.itemAccessibilityLabel" = "メディア";
+"mediaGallery.accessRequiredTitle" = "写真にアクセスできません";
+"mediaGallery.accessRequiredDescription" = "写真を閲覧するには、写真へのアクセスを許可してください。";
+"mediaGallery.emptyTitle" = "写真がまだありません";
+"mediaGallery.emptyDescription" = "フォトライブラリの写真がここに表示されます。";

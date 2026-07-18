@@ -83,52 +83,57 @@ public struct GalleryView<
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                headerContent()
-                    .frame(maxWidth: .infinity)
-
-                if items.isEmpty {
-                    emptyContent()
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    headerContent()
                         .frame(maxWidth: .infinity)
-                } else {
-                    LazyVGrid(
-                        columns: layout.columns,
-                        spacing: layout.resolvedGap
-                    ) {
-                        ForEach(items) { item in
-                            galleryCell(for: item)
+
+                    if items.isEmpty {
+                        Spacer(minLength: 0)
+                        emptyContent()
+                            .frame(maxWidth: .infinity)
+                        Spacer(minLength: 0)
+                    } else {
+                        LazyVGrid(
+                            columns: layout.columns,
+                            spacing: layout.resolvedGap
+                        ) {
+                            ForEach(items) { item in
+                                galleryCell(for: item)
+                            }
+                        }
+                        .scrollTargetLayout()
+
+                        if pagination.isFetchingNextPage {
+                            nextPageLoadingIndicator()
                         }
                     }
-                    .scrollTargetLayout()
 
-                    if pagination.isFetchingNextPage {
-                        nextPageLoadingIndicator()
-                    }
+                    footerContent()
+                        .frame(maxWidth: .infinity)
                 }
-
-                footerContent()
-                    .frame(maxWidth: .infinity)
+                .frame(minHeight: proxy.size.height)
+                .padding(layout.resolvedContentPadding.edgeInsets)
             }
-            .padding(layout.resolvedContentPadding.edgeInsets)
-        }
-        .modifier(GalleryScrollPositionModifier(scrollPosition: scrollPosition))
-        .modifier(GalleryPullToRefreshModifier(onRefresh: onRefresh))
-        .scrollIndicators(layout.showsScrollIndicators ? .visible : .hidden)
-        .onChange(of: currentItemIDs) { _, newItemIDs in
-            handleItemIDsChange(to: newItemIDs)
-        }
-        .onChange(of: pagination.hasNextPage) { oldValue, newValue in
-            handleHasNextPageChange(
-                from: oldValue,
-                to: newValue
-            )
-        }
-        .onChange(of: pagination.isFetchingNextPage) { oldValue, newValue in
-            handleIsFetchingNextPageChange(
-                from: oldValue,
-                to: newValue
-            )
+            .modifier(GalleryScrollPositionModifier(scrollPosition: scrollPosition))
+            .modifier(GalleryPullToRefreshModifier(onRefresh: onRefresh))
+            .scrollIndicators(layout.showsScrollIndicators ? .visible : .hidden)
+            .onChange(of: currentItemIDs) { _, newItemIDs in
+                handleItemIDsChange(to: newItemIDs)
+            }
+            .onChange(of: pagination.hasNextPage) { oldValue, newValue in
+                handleHasNextPageChange(
+                    from: oldValue,
+                    to: newValue
+                )
+            }
+            .onChange(of: pagination.isFetchingNextPage) { oldValue, newValue in
+                handleIsFetchingNextPageChange(
+                    from: oldValue,
+                    to: newValue
+                )
+            }
         }
     }
 

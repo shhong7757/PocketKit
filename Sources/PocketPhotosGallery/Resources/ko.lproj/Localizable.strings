@@ -1,0 +1,5 @@
+"mediaGallery.itemAccessibilityLabel" = "미디어";
+"mediaGallery.accessRequiredTitle" = "사진에 접근할 수 없어요";
+"mediaGallery.accessRequiredDescription" = "사진을 보려면 사진 접근을 허용해 주세요.";
+"mediaGallery.emptyTitle" = "아직 사진이 없어요";
+"mediaGallery.emptyDescription" = "사진 보관함의 사진이 여기에 표시됩니다.";

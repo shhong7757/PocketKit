@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 import PackageDescription
 
@@ -7,7 +7,6 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [
         .iOS(.v18),
-        .macOS(.v15),
     ],
     products: [
         .library(
@@ -17,6 +16,10 @@ let package = Package(
         .library(
             name: "PocketStorage",
             targets: ["PocketStorage"]
+        ),
+        .library(
+            name: "PocketPhotosGallery",
+            targets: ["PocketPhotosGallery"]
         )
     ],
     targets: [
@@ -31,6 +34,14 @@ let package = Package(
             name: "PocketStorage",
             path: "Sources/PocketStorage"
         ),
+        .target(
+            name: "PocketPhotosGallery",
+            dependencies: ["PocketUI"],
+            path: "Sources/PocketPhotosGallery",
+            resources: [
+                .process("Resources")
+            ]
+        ),
         .testTarget(
             name: "PocketUITests",
             dependencies: ["PocketUI"]
@@ -39,5 +50,10 @@ let package = Package(
             name: "PocketStorageTests",
             dependencies: ["PocketStorage"]
         ),
-    ]
+        .testTarget(
+            name: "PocketPhotosGalleryTests",
+            dependencies: ["PocketPhotosGallery"]
+        ),
+    ],
+    swiftLanguageModes: [.v6]
 )

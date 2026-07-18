@@ -1,0 +1,5 @@
+"mediaGallery.itemAccessibilityLabel" = "Media";
+"mediaGallery.accessRequiredTitle" = "Photo access is unavailable";
+"mediaGallery.accessRequiredDescription" = "Allow access to your photos to browse them here.";
+"mediaGallery.emptyTitle" = "No photos yet";
+"mediaGallery.emptyDescription" = "Photos from your library will appear here.";
