@@ -12,7 +12,9 @@
 
 앱 모델은 `Identifiable`이면 충분합니다. 셀 콘텐츠는 앱에서 만든 SwiftUI 뷰를
 전달합니다. 각 항목의 접근성 레이블은 앱의 언어와 콘텐츠 맥락에 맞게
-`accessibilityLabel`로 전달합니다.
+`accessibilityLabel`로 전달하고, 추가 메타데이터는 선택적으로
+`accessibilityValue`로 전달합니다. 선택 상태와 동작 힌트는 갤러리가 자동으로
+추가합니다.
 
 ```swift
 struct Photo: Identifiable {

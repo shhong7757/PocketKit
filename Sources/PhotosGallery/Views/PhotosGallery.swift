@@ -27,11 +27,11 @@ public struct PhotosGallery: View {
         let zoomTransition: GalleryZoomTransition<String>?
         let scrollPosition: Binding<ScrollPosition>?
         let contentAspectRatio: (PhotosGalleryContent) -> CGFloat?
-        let accessibilityLabel: (PhotosGalleryContent) -> String
+        let accessibility: (PhotosGalleryContent) -> PhotosGalleryAccessibility
         let onTap: ((PhotosGalleryContent) -> Void)?
         let onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)?
         let loadingContent: Slot?
-        let unavailableContent: (PhotosGalleryAccessStatus) -> Slot?
+        let unavailableContent: ((PhotosGalleryAccessStatus) -> Slot?)?
         let emptyContent: Slot?
         let headerContent: Slot?
         let footerContent: Slot?
@@ -43,36 +43,36 @@ public struct PhotosGallery: View {
     private let thumbnailService: any PhotosGalleryThumbnailServiceProtocol
 
     public init(
-        filter: PhotosGalleryFilter? = .all,
-        includeLivePhotos: Bool? = false,
+        filter: PhotosGalleryFilter = .all,
+        includeLivePhotos: Bool = false,
         selection: GallerySelection<String> = .none,
-        layout: GalleryLayout? = .compact,
+        layout: GalleryLayout = .compact,
         zoomTransition: GalleryZoomTransition<String>? = nil,
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (PhotosGalleryContent) -> CGFloat? = { _ in nil },
-        accessibilityLabel: @escaping (PhotosGalleryContent) -> String,
+        accessibility: @escaping (PhotosGalleryContent) -> PhotosGalleryAccessibility,
         onTap: ((PhotosGalleryContent) -> Void)? = nil,
         onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)? = nil,
         loadingContent: PhotosGallery.Slot? = nil,
-        unavailableContent: @escaping (PhotosGalleryAccessStatus) -> PhotosGallery.Slot? = { _ in nil },
+        unavailableContent: ((PhotosGalleryAccessStatus) -> PhotosGallery.Slot?)? = nil,
         emptyContent: PhotosGallery.Slot? = nil,
         headerContent: PhotosGallery.Slot? = nil,
         footerContent: PhotosGallery.Slot? = nil
     ) {
         self.init(
             vm: PhotosGalleryViewModel(
-                filter: filter ?? .all,
-                includeLivePhotos: includeLivePhotos ?? false
+                filter: filter,
+                includeLivePhotos: includeLivePhotos
             ),
             configuration: Configuration(
-                filter: filter ?? .all,
-                includeLivePhotos: includeLivePhotos ?? false,
+                filter: filter,
+                includeLivePhotos: includeLivePhotos,
                 selection: selection,
-                layout: layout ?? .compact,
+                layout: layout,
                 zoomTransition: zoomTransition,
                 scrollPosition: scrollPosition,
                 contentAspectRatio: contentAspectRatio,
-                accessibilityLabel: accessibilityLabel,
+                accessibility: accessibility,
                 onTap: onTap,
                 onError: onError,
                 loadingContent: loadingContent,
@@ -112,7 +112,7 @@ public struct PhotosGallery: View {
                     )
 
             case .unavailable:
-                configuration.unavailableContent(vm.accessStatus)?.makeView()
+                configuration.unavailableContent?(vm.accessStatus)?.makeView()
                     ?? AnyView(EmptyView())
 
             case .available:
@@ -123,7 +123,12 @@ public struct PhotosGallery: View {
                     zoomTransition: configuration.zoomTransition,
                     scrollPosition: configuration.scrollPosition,
                     contentAspectRatio: configuration.contentAspectRatio,
-                    accessibilityLabel: configuration.accessibilityLabel,
+                    accessibilityLabel: { content in
+                        configuration.accessibility(content).label
+                    },
+                    accessibilityValue: { content in
+                        configuration.accessibility(content).value
+                    },
                     pagination: GalleryPagination(
                         hasNextPage: vm.hasNextPage,
                         isFetchingNextPage: vm.isFetchingNextPage,

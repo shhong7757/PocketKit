@@ -62,9 +62,7 @@ private enum PhotosGalleryPreviewFactory {
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
-                accessibilityLabel: { content in
-                    content.mediaType == .video ? "Video" : "Photo"
-                },
+                accessibility: PhotosGalleryPreviewFactory.accessibility,
                 onTap: { _ in },
                 onError: nil,
                 loadingContent: PhotosGallery.Slot {
@@ -122,9 +120,7 @@ private enum PhotosGalleryPreviewFactory {
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
-                accessibilityLabel: { content in
-                    content.mediaType == .video ? "Video" : "Photo"
-                },
+                accessibility: PhotosGalleryPreviewFactory.accessibility,
                 onTap: { _ in },
                 onError: nil,
                 loadingContent: PhotosGallery.Slot {
@@ -176,6 +172,41 @@ private enum PhotosGalleryPreviewFactory {
                 isLivePhoto: !isVideo && index.isMultiple(of: 3)
             )
         }
+    }
+
+    static func accessibility(
+        for content: PhotosGalleryContent
+    ) -> PhotosGalleryAccessibility {
+        var values: [String] = []
+
+        if content.isLivePhoto {
+            values.append("Live Photo")
+        }
+
+        if content.mediaType == .video,
+           let duration = content.duration {
+            values.append(formattedDuration(duration))
+        }
+
+        return PhotosGalleryAccessibility(
+            label: content.mediaType == .video ? "Video" : "Photo",
+            value: values.isEmpty ? nil : values.joined(separator: ", ")
+        )
+    }
+
+    private static func formattedDuration(_ duration: TimeInterval) -> String {
+        let totalSeconds = max(Int(duration), 0)
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+
+        return String(
+            format: "%02d:%02d:%02d",
+            locale: Locale(identifier: "en_US_POSIX"),
+            hours,
+            minutes,
+            seconds
+        )
     }
 }
 

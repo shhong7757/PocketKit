@@ -19,6 +19,7 @@ struct GalleryCell<Content: View, OverlayContent: View>: View {
     let showsSelectionIndicator: Bool
     let hasTapAction: Bool
     let accessibilityLabel: String
+    let contentAccessibilityValue: String?
     let content: Content
     let overlayContent: OverlayContent
 
@@ -84,7 +85,7 @@ struct GalleryCell<Content: View, OverlayContent: View>: View {
         .accessibilityLabel(Text(accessibilityLabel))
         .modifier(
             GalleryAccessibilityValueModifier(
-                accessibilityValue: accessibilityValue
+                accessibilityValue: resolvedAccessibilityValue
             )
         )
         .modifier(
@@ -101,12 +102,23 @@ struct GalleryCell<Content: View, OverlayContent: View>: View {
             : Color.black.opacity(Metrics.selectionIndicatorOpacity)
     }
 
-    private var accessibilityValue: String? {
-        guard showsSelectionIndicator else { return nil }
+    private var resolvedAccessibilityValue: String? {
+        var values: [String] = []
 
-        return isSelected
+        if let contentAccessibilityValue,
+           !contentAccessibilityValue.isEmpty {
+            values.append(contentAccessibilityValue)
+        }
+
+        guard showsSelectionIndicator else {
+            return values.isEmpty ? nil : values.joined(separator: ", ")
+        }
+
+        values.append(isSelected
             ? GalleryAccessibilityText.selected
-            : GalleryAccessibilityText.notSelected
+            : GalleryAccessibilityText.notSelected)
+
+        return values.joined(separator: ", ")
     }
 
     private var accessibilityHint: String? {

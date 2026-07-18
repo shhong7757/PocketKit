@@ -18,6 +18,7 @@ public struct GalleryView<
     private let scrollPosition: Binding<ScrollPosition>?
     private let contentAspectRatio: (Item) -> CGFloat?
     private let accessibilityLabel: (Item) -> String
+    private let accessibilityValue: (Item) -> String?
     private let pagination: GalleryPagination
     private let onRefresh: (@Sendable () async -> Void)?
     private let onTap: ((Item) -> Void)?
@@ -56,6 +57,7 @@ public struct GalleryView<
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -72,6 +74,7 @@ public struct GalleryView<
         self.scrollPosition = scrollPosition
         self.contentAspectRatio = contentAspectRatio
         self.accessibilityLabel = accessibilityLabel
+        self.accessibilityValue = accessibilityValue
         self.pagination = pagination
         self.onRefresh = onRefresh
         self.onTap = onTap
@@ -154,6 +157,7 @@ public struct GalleryView<
             showsSelectionIndicator: isSelectionModeEnabled,
             hasTapAction: isCellTapEnabled,
             accessibilityLabel: accessibilityLabel(item),
+            contentAccessibilityValue: accessibilityValue(item),
             content: content(item),
             overlayContent: overlayContent(item)
         )
@@ -258,6 +262,7 @@ extension GalleryView where HeaderContent == EmptyView, FooterContent == EmptyVi
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -273,6 +278,7 @@ extension GalleryView where HeaderContent == EmptyView, FooterContent == EmptyVi
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -296,6 +302,7 @@ where OverlayContent == EmptyView, HeaderContent == EmptyView, FooterContent == 
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -310,6 +317,7 @@ where OverlayContent == EmptyView, HeaderContent == EmptyView, FooterContent == 
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -333,6 +341,7 @@ where EmptyContent == EmptyView, HeaderContent == EmptyView, FooterContent == Em
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -347,6 +356,7 @@ where EmptyContent == EmptyView, HeaderContent == EmptyView, FooterContent == Em
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -376,6 +386,7 @@ where
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -389,6 +400,7 @@ where
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -413,6 +425,7 @@ where OverlayContent == EmptyView, EmptyContent == EmptyView, HeaderContent == E
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -427,6 +440,7 @@ where OverlayContent == EmptyView, EmptyContent == EmptyView, HeaderContent == E
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -450,6 +464,7 @@ where OverlayContent == EmptyView, EmptyContent == EmptyView, FooterContent == E
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -464,6 +479,7 @@ where OverlayContent == EmptyView, EmptyContent == EmptyView, FooterContent == E
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
@@ -486,6 +502,7 @@ extension GalleryView where OverlayContent == EmptyView, EmptyContent == EmptyVi
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (Item) -> CGFloat? = { _ in nil },
         accessibilityLabel: @escaping (Item) -> String,
+        accessibilityValue: @escaping (Item) -> String? = { _ in nil },
         pagination: GalleryPagination = .disabled,
         onRefresh: (@Sendable () async -> Void)? = nil,
         onTap: ((Item) -> Void)? = nil,
@@ -501,6 +518,7 @@ extension GalleryView where OverlayContent == EmptyView, EmptyContent == EmptyVi
             scrollPosition: scrollPosition,
             contentAspectRatio: contentAspectRatio,
             accessibilityLabel: accessibilityLabel,
+            accessibilityValue: accessibilityValue,
             pagination: pagination,
             onRefresh: onRefresh,
             onTap: onTap,
