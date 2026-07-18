@@ -141,18 +141,22 @@ private enum PhotosGalleryPreviewFactory {
                         systemImage: "photo.on.rectangle.angled"
                     )
                 },
-                headerContent: PhotosGallery.Slot {
-                    Text("Custom Header")
+                headerContent: PhotosGallery.Slot { context in
+                    Text("Custom Header · \(context.contentCount)")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                 },
-                footerContent: PhotosGallery.Slot {
-                    Text("Custom Footer")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                footerContent: PhotosGallery.Slot { context in
+                    Text(
+                        context.isFetchingNextPage
+                            ? "Loading more..."
+                            : "Custom Footer"
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
                 }
             ),
             thumbnailService: PhotosGalleryPreviewThumbnailService(

@@ -6,7 +6,7 @@ import SwiftUI
 public struct PhotosGallery: View {
     /// 로딩, 빈 상태, 권한 없음 화면에 표시할 SwiftUI 콘텐츠를 감쌉니다.
     public struct Slot {
-        private let makeContent: () -> AnyView
+        private let makeContent: (PhotosGalleryContext) -> AnyView
 
         /// 슬롯 콘텐츠를 만듭니다.
         ///
@@ -14,13 +14,22 @@ public struct PhotosGallery: View {
         public init<Content: View>(
             @ViewBuilder content: @escaping () -> Content
         ) {
-            self.makeContent = {
+            self.makeContent = { _ in
                 AnyView(content())
             }
         }
 
-        fileprivate func makeView() -> AnyView {
-            makeContent()
+        /// context를 사용해 슬롯 콘텐츠를 만듭니다.
+        public init<Content: View>(
+            @ViewBuilder content: @escaping (PhotosGalleryContext) -> Content
+        ) {
+            self.makeContent = { context in
+                AnyView(content(context))
+            }
+        }
+
+        fileprivate func makeView(context: PhotosGalleryContext) -> AnyView {
+            makeContent(context)
         }
     }
 
@@ -124,11 +133,17 @@ public struct PhotosGallery: View {
         // Keep one observable reference for this render pass and all async callbacks.
         let vm = vm
         let onError = configuration.onError
+        let context = PhotosGalleryContext(
+            accessStatus: vm.accessStatus,
+            contentCount: vm.items.count,
+            isFetchingNextPage: vm.isFetchingNextPage,
+            hasNextPage: vm.hasNextPage
+        )
 
         Group {
             switch vm.presentationState {
             case .loading:
-                configuration.loadingContent?.makeView()
+                configuration.loadingContent?.makeView(context: context)
                     ?? AnyView(
                         ProgressView()
                             .frame(
@@ -138,7 +153,9 @@ public struct PhotosGallery: View {
                     )
 
             case .unavailable:
-                configuration.unavailableContent?(vm.accessStatus)?.makeView()
+                configuration.unavailableContent?(vm.accessStatus)?.makeView(
+                    context: context
+                )
                     ?? AnyView(EmptyView())
 
             case .available:
@@ -174,7 +191,8 @@ public struct PhotosGallery: View {
                     },
                     onTap: configuration.onTap,
                     headerContent: {
-                        configuration.headerContent?.makeView() ?? AnyView(EmptyView())
+                        configuration.headerContent?.makeView(context: context)
+                            ?? AnyView(EmptyView())
                     },
                     content: { content in
                         PhotosGalleryContentView(
@@ -187,10 +205,12 @@ public struct PhotosGallery: View {
                         EmptyView()
                     },
                     emptyContent: {
-                        configuration.emptyContent?.makeView() ?? AnyView(EmptyView())
+                        configuration.emptyContent?.makeView(context: context)
+                            ?? AnyView(EmptyView())
                     },
                     footerContent: {
-                        configuration.footerContent?.makeView() ?? AnyView(EmptyView())
+                        configuration.footerContent?.makeView(context: context)
+                            ?? AnyView(EmptyView())
                     }
                 )
             }

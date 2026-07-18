@@ -36,6 +36,7 @@ Photos 라이브러리의 이미지와 동영상을 SwiftUI 갤러리로 표시�
 
 - ``PhotosGalleryContent``
 - ``PhotosGalleryAccessibility``
+- ``PhotosGalleryContext``
 - ``PhotosGalleryFilter``
 - ``PhotosGalleryMediaType``
 

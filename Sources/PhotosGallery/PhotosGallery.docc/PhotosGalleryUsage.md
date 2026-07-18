@@ -100,7 +100,8 @@ PhotosGallery(
 - `loadingContent`: 권한 확인 또는 첫 페이지를 불러오는 동안 표시합니다.
 - `unavailableContent`: 사진 보관함에 접근할 수 없을 때 표시합니다.
 - `emptyContent`: 접근은 가능하지만 표시할 항목이 없을 때 표시합니다.
-- `headerContent`, `footerContent`: 갤러리 위·아래에 고정 콘텐츠를 추가합니다.
+- `headerContent`, `footerContent`: ``PhotosGalleryContext``를 받아 갤러리 위·아래에
+  상태에 맞는 콘텐츠를 추가합니다.
 
 ```swift
 PhotosGallery(
@@ -112,6 +113,9 @@ PhotosGallery(
     },
     emptyContent: PhotosGallery.Slot {
         ContentUnavailableView("사진 없음", systemImage: "photo")
+    },
+    headerContent: PhotosGallery.Slot { context in
+        Text("현재 사진 수: \(context.contentCount)")
     }
 )
 ```
