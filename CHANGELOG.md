@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.2 - 2026-07-18
+
+### Added
+
+- Added `PhotosGalleryContext` for header and footer slot content.
+- Added a context-aware `PhotosGallery.Slot` initializer with access status, content count, next-page loading state, and pagination availability.
+
+### Changed
+
+- Preserved existing no-context slot usage while allowing header and footer content to react to gallery state.
+
 ## v0.4.1 - 2026-07-18
 
 ### Added
