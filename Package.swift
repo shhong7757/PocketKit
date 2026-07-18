@@ -37,10 +37,7 @@ let package = Package(
         .target(
             name: "PhotosGallery",
             dependencies: ["PocketUI"],
-            path: "Sources/PhotosGallery",
-            resources: [
-                .process("Resources")
-            ]
+            path: "Sources/PhotosGallery"
         ),
         .testTarget(
             name: "PocketUITests",

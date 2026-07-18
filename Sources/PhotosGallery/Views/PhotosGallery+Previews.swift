@@ -59,19 +59,28 @@ private enum PhotosGalleryPreviewFactory {
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
-                accessibilityLabel: nil,
+                accessibilityLabel: { content in
+                    content.mediaType == .video ? "Video" : "Photo"
+                },
                 onTap: { _ in },
                 onError: nil,
                 loadingContent: PhotosGallery.Slot {
-                    PhotosGalleryDefaultLoadingView()
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 },
                 unavailableContent: { _ in
                     PhotosGallery.Slot {
-                        PhotosGalleryDefaultUnavailableView()
+                        ContentUnavailableView(
+                            "Photo Access Required",
+                            systemImage: "lock.slash"
+                        )
                     }
                 },
                 emptyContent: PhotosGallery.Slot {
-                    PhotosGalleryDefaultEmptyView()
+                    ContentUnavailableView(
+                        "No Photos Yet",
+                        systemImage: "photo.on.rectangle.angled"
+                    )
                 },
                 headerContent: nil,
                 footerContent: nil
@@ -110,19 +119,28 @@ private enum PhotosGalleryPreviewFactory {
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
-                accessibilityLabel: nil,
+                accessibilityLabel: { content in
+                    content.mediaType == .video ? "Video" : "Photo"
+                },
                 onTap: { _ in },
                 onError: nil,
                 loadingContent: PhotosGallery.Slot {
-                    PhotosGalleryDefaultLoadingView()
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 },
                 unavailableContent: { _ in
                     PhotosGallery.Slot {
-                        PhotosGalleryDefaultUnavailableView()
+                        ContentUnavailableView(
+                            "Photo Access Required",
+                            systemImage: "lock.slash"
+                        )
                     }
                 },
                 emptyContent: PhotosGallery.Slot {
-                    PhotosGalleryDefaultEmptyView()
+                    ContentUnavailableView(
+                        "No Photos Yet",
+                        systemImage: "photo.on.rectangle.angled"
+                    )
                 },
                 headerContent: PhotosGallery.Slot {
                     Text("Custom Header")

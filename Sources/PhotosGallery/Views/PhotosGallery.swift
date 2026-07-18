@@ -27,12 +27,12 @@ public struct PhotosGallery: View {
         let zoomTransition: GalleryZoomTransition<String>?
         let scrollPosition: Binding<ScrollPosition>?
         let contentAspectRatio: (PhotosGalleryContent) -> CGFloat?
-        let accessibilityLabel: ((PhotosGalleryContent) -> String)?
+        let accessibilityLabel: (PhotosGalleryContent) -> String
         let onTap: ((PhotosGalleryContent) -> Void)?
         let onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)?
-        let loadingContent: Slot
-        let unavailableContent: (PhotosGalleryAccessStatus) -> Slot
-        let emptyContent: Slot
+        let loadingContent: Slot?
+        let unavailableContent: (PhotosGalleryAccessStatus) -> Slot?
+        let emptyContent: Slot?
         let headerContent: Slot?
         let footerContent: Slot?
     }
@@ -43,37 +43,29 @@ public struct PhotosGallery: View {
     private let thumbnailService: any PhotosGalleryThumbnailServiceProtocol
 
     public init(
-        filter: PhotosGalleryFilter = .all,
+        filter: PhotosGalleryFilter? = .all,
         selection: GallerySelection<String> = .none,
-        layout: GalleryLayout = .compact,
-        paginationThreshold: Int = 12,
+        layout: GalleryLayout? = .compact,
+        paginationThreshold: Int? = 12,
         zoomTransition: GalleryZoomTransition<String>? = nil,
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (PhotosGalleryContent) -> CGFloat? = { _ in nil },
-        accessibilityLabel: ((PhotosGalleryContent) -> String)? = nil,
+        accessibilityLabel: @escaping (PhotosGalleryContent) -> String,
         onTap: ((PhotosGalleryContent) -> Void)? = nil,
         onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)? = nil,
-        loadingContent: PhotosGallery.Slot = PhotosGallery.Slot {
-            PhotosGalleryDefaultLoadingView()
-        },
-        unavailableContent: @escaping (PhotosGalleryAccessStatus) -> PhotosGallery.Slot = { _ in
-            PhotosGallery.Slot {
-                PhotosGalleryDefaultUnavailableView()
-            }
-        },
-        emptyContent: PhotosGallery.Slot = PhotosGallery.Slot {
-            PhotosGalleryDefaultEmptyView()
-        },
+        loadingContent: PhotosGallery.Slot? = nil,
+        unavailableContent: @escaping (PhotosGalleryAccessStatus) -> PhotosGallery.Slot? = { _ in nil },
+        emptyContent: PhotosGallery.Slot? = nil,
         headerContent: PhotosGallery.Slot? = nil,
         footerContent: PhotosGallery.Slot? = nil
     ) {
         self.init(
-            vm: PhotosGalleryViewModel(filter: filter),
+            vm: PhotosGalleryViewModel(filter: filter ?? .all),
             configuration: Configuration(
-                filter: filter,
+                filter: filter ?? .all,
                 selection: selection,
-                layout: layout,
-                paginationThreshold: paginationThreshold,
+                layout: layout ?? .compact,
+                paginationThreshold: paginationThreshold ?? 12,
                 zoomTransition: zoomTransition,
                 scrollPosition: scrollPosition,
                 contentAspectRatio: contentAspectRatio,
@@ -107,10 +99,18 @@ public struct PhotosGallery: View {
         Group {
             switch vm.presentationState {
             case .loading:
-                configuration.loadingContent.makeView()
+                configuration.loadingContent?.makeView()
+                    ?? AnyView(
+                        ProgressView()
+                            .frame(
+                                maxWidth: .infinity,
+                                maxHeight: .infinity
+                            )
+                    )
 
             case .unavailable:
-                configuration.unavailableContent(vm.accessStatus).makeView()
+                configuration.unavailableContent(vm.accessStatus)?.makeView()
+                    ?? AnyView(EmptyView())
 
             case .available:
                 PocketUI.GalleryView(
@@ -120,12 +120,7 @@ public struct PhotosGallery: View {
                     zoomTransition: configuration.zoomTransition,
                     scrollPosition: configuration.scrollPosition,
                     contentAspectRatio: configuration.contentAspectRatio,
-                    accessibilityLabel: configuration.accessibilityLabel ?? { _ in
-                        String(
-                            localized: "mediaGallery.itemAccessibilityLabel",
-                            bundle: .module
-                        )
-                    },
+                    accessibilityLabel: configuration.accessibilityLabel,
                     pagination: GalleryPagination(
                         hasNextPage: vm.hasNextPage,
                         isFetchingNextPage: vm.isFetchingNextPage,
@@ -158,7 +153,7 @@ public struct PhotosGallery: View {
                         EmptyView()
                     },
                     emptyContent: {
-                        configuration.emptyContent.makeView()
+                        configuration.emptyContent?.makeView() ?? AnyView(EmptyView())
                     },
                     footerContent: {
                         configuration.footerContent?.makeView() ?? AnyView(EmptyView())
