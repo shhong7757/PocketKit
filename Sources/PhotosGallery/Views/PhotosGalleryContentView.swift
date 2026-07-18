@@ -40,7 +40,7 @@ struct PhotosGalleryContentView: View {
                 if let image = vm.image {
                     Image(uiImage: image)
                         .resizable()
-                        .scaledToFill()
+                        .scaledToFit()
                 }
 
                 if content.mediaType == .video {
