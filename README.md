@@ -23,3 +23,4 @@
 
 - [PocketStorage DocC catalog](Sources/PocketStorage/PocketStorage.docc/PocketStorage.md)
 - [PocketUI DocC catalog](Sources/PocketUI/PocketUI.docc/PocketUI.md)
+- [PhotosGallery DocC catalog](Sources/PhotosGallery/PhotosGallery.docc/PhotosGallery.md)
