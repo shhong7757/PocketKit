@@ -29,6 +29,7 @@ public struct PhotosGallery: View {
         let contentAspectRatio: (PhotosGalleryContent) -> CGFloat?
         let accessibilityLabel: ((PhotosGalleryContent) -> String)?
         let onTap: ((PhotosGalleryContent) -> Void)?
+        let onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)?
         let loadingContent: Slot
         let unavailableContent: (PhotosGalleryAccessStatus) -> Slot
         let emptyContent: Slot
@@ -51,6 +52,7 @@ public struct PhotosGallery: View {
         contentAspectRatio: @escaping (PhotosGalleryContent) -> CGFloat? = { _ in nil },
         accessibilityLabel: ((PhotosGalleryContent) -> String)? = nil,
         onTap: ((PhotosGalleryContent) -> Void)? = nil,
+        onError: (@Sendable @MainActor (PhotosGalleryError) -> Void)? = nil,
         loadingContent: PhotosGallery.Slot = PhotosGallery.Slot {
             PhotosGalleryDefaultLoadingView()
         },
@@ -77,6 +79,7 @@ public struct PhotosGallery: View {
                 contentAspectRatio: contentAspectRatio,
                 accessibilityLabel: accessibilityLabel,
                 onTap: onTap,
+                onError: onError,
                 loadingContent: loadingContent,
                 unavailableContent: unavailableContent,
                 emptyContent: emptyContent,
@@ -99,6 +102,7 @@ public struct PhotosGallery: View {
     public var body: some View {
         // Keep one observable reference for this render pass and all async callbacks.
         let vm = vm
+        let onError = configuration.onError
 
         Group {
             switch vm.presentationState {
@@ -128,12 +132,16 @@ public struct PhotosGallery: View {
                         threshold: configuration.paginationThreshold,
                         fetchNextPage: {
                             Task { @MainActor in
-                                await vm.loadMoreIfNeeded()
+                                if let error = await vm.loadMoreIfNeeded() {
+                                    onError?(error)
+                                }
                             }
                         }
                     ),
                     onRefresh: {
-                        await vm.reload()
+                        if let error = await vm.reload() {
+                            await onError?(error)
+                        }
                     },
                     onTap: configuration.onTap,
                     headerContent: {
@@ -159,18 +167,24 @@ public struct PhotosGallery: View {
             }
         }
         .task {
-            await vm.requestAccess()
+            if let error = await vm.requestAccess() {
+                onError?(error)
+            }
         }
         .onChange(of: configuration.filter) { _, newFilter in
             Task { @MainActor in
-                await vm.changeFilter(to: newFilter)
+                if let error = await vm.changeFilter(to: newFilter) {
+                    onError?(error)
+                }
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
 
             Task { @MainActor in
-                await vm.requestAccess()
+                if let error = await vm.requestAccess() {
+                    onError?(error)
+                }
             }
         }
     }

@@ -17,6 +17,8 @@
 <string>사진을 선택하기 위해 사진 보관함에 접근합니다.</string>
 ```
 
+권한 상태나 페이지 조회 실패는 `PhotosGalleryError`를 통해 `onError`로 전달받을 수 있습니다.
+
 ## Documentation
 
 - [PocketStorage DocC catalog](Sources/PocketStorage/PocketStorage.docc/PocketStorage.md)

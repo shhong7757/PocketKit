@@ -98,40 +98,52 @@ final class PhotosGalleryViewModel {
         )
     }
 
-    func requestAccess() async {
-        guard !isRequestingAccess else { return }
+    func requestAccess() async -> PhotosGalleryError? {
+        guard !isRequestingAccess else { return nil }
 
         isRequestingAccess = true
         defer {
             isRequestingAccess = false
         }
 
-        updateAccessStatus(await authorizationUseCase.requestAccessIfNeeded())
-        await fetchPageIfAccessible()
+        let status = await authorizationUseCase.requestAccessIfNeeded()
+        updateAccessStatus(status)
+
+        guard status.isAccessible else {
+            return accessError(for: status)
+        }
+
+        return await fetchPageIfAccessible()
     }
 
-    func reload() async {
-        updateAccessStatus(authorizationUseCase.status())
-        await fetchPageIfAccessible()
+    func reload() async -> PhotosGalleryError? {
+        let status = authorizationUseCase.status()
+        updateAccessStatus(status)
+
+        guard status.isAccessible else {
+            return accessError(for: status)
+        }
+
+        return await fetchPageIfAccessible()
     }
 
-    func changeFilter(to newFilter: PhotosGalleryFilter) async {
-        guard filter != newFilter else { return }
+    func changeFilter(to newFilter: PhotosGalleryFilter) async -> PhotosGalleryError? {
+        guard filter != newFilter else { return nil }
 
         filter = newFilter
         invalidatePagination()
-        await fetchPageIfAccessible()
+        return await fetchPageIfAccessible()
     }
 
-    func loadMoreIfNeeded() async {
+    func loadMoreIfNeeded() async -> PhotosGalleryError? {
         guard state.accessStatus.isAccessible,
               state.hasNextPage,
               !state.isFetching,
               !state.isFetchingNextPage else {
-            return
+            return nil
         }
 
-        await fetchNextPage()
+        return await fetchNextPage()
     }
 
     var items: [PhotosGalleryContent] {
@@ -154,13 +166,13 @@ final class PhotosGalleryViewModel {
         state.hasNextPage
     }
 
-    private func fetchPageIfAccessible() async {
+    private func fetchPageIfAccessible() async -> PhotosGalleryError? {
         guard state.accessStatus.isAccessible else {
             invalidatePaginationIfMediaLibraryInaccessible()
-            return
+            return accessError(for: state.accessStatus)
         }
 
-        guard !state.isFetching else { return }
+        guard !state.isFetching else { return nil }
 
         paginationGeneration += 1
         let generation = paginationGeneration
@@ -171,14 +183,24 @@ final class PhotosGalleryViewModel {
             }
         }
 
-        let page = await fetchPage(offset: 0)
-        guard !Task.isCancelled, generation == paginationGeneration else { return }
+        let page: PhotosGalleryPage
+        do {
+            page = try await fetchPage(offset: 0)
+        } catch is CancellationError {
+            return nil
+        } catch {
+            guard generation == paginationGeneration else { return nil }
+            return .pageFetchFailed
+        }
+
+        guard !Task.isCancelled, generation == paginationGeneration else { return nil }
 
         paginationOffset = page.offset
         state.replaceItems(with: page)
+        return nil
     }
 
-    private func fetchNextPage() async {
+    private func fetchNextPage() async -> PhotosGalleryError? {
         let generation = paginationGeneration
         state.isFetchingNextPage = true
         defer {
@@ -187,15 +209,25 @@ final class PhotosGalleryViewModel {
             }
         }
 
-        let page = await fetchPage(offset: paginationOffset)
-        guard !Task.isCancelled, generation == paginationGeneration else { return }
+        let page: PhotosGalleryPage
+        do {
+            page = try await fetchPage(offset: paginationOffset)
+        } catch is CancellationError {
+            return nil
+        } catch {
+            guard generation == paginationGeneration else { return nil }
+            return .pageFetchFailed
+        }
+
+        guard !Task.isCancelled, generation == paginationGeneration else { return nil }
 
         paginationOffset = page.offset
         state.appendItems(from: page)
+        return nil
     }
 
-    private func fetchPage(offset: Int) async -> PhotosGalleryPage {
-        await pagingUseCase.fetch(
+    private func fetchPage(offset: Int) async throws -> PhotosGalleryPage {
+        try await pagingUseCase.fetch(
             offset: offset,
             filter: filter
         )
@@ -210,6 +242,17 @@ final class PhotosGalleryViewModel {
     private func updateAccessStatus(_ status: PhotosGalleryAccessStatus) {
         state.accessStatus = status
         invalidatePaginationIfMediaLibraryInaccessible()
+    }
+
+    private func accessError(for status: PhotosGalleryAccessStatus) -> PhotosGalleryError? {
+        switch status {
+        case .denied:
+            return .photoLibraryAccessDenied
+        case .restricted:
+            return .photoLibraryAccessRestricted
+        case .notDetermined, .authorized, .limited:
+            return nil
+        }
     }
 
     private func invalidatePaginationIfMediaLibraryInaccessible() {

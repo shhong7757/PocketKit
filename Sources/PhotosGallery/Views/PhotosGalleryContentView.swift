@@ -35,6 +35,8 @@ struct PhotosGalleryContentView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
+                Color(uiColor: .systemGray5)
+
                 if let image = vm.image {
                     Image(uiImage: image)
                         .resizable()

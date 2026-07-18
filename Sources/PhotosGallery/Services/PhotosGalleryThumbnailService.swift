@@ -14,7 +14,14 @@ final class PhotosGalleryThumbnailRequest: @unchecked Sendable {
     private let lock = NSLock()
     private var task: Task<Void, Never>?
     private var requestID = PHInvalidImageRequestID
+    private var cacheInfo: CacheInfo?
     private var isCancelled = false
+
+    private struct CacheInfo {
+        let asset: PHAsset
+        let targetSize: CGSize
+        let options: PHImageRequestOptions
+    }
 
     init(imageManager: PHCachingImageManager) {
         self.imageManager = imageManager
@@ -46,6 +53,32 @@ final class PhotosGalleryThumbnailRequest: @unchecked Sendable {
         }
     }
 
+    func setCacheInfo(
+        asset: PHAsset,
+        targetSize: CGSize,
+        options: PHImageRequestOptions
+    ) {
+        lock.lock()
+        let shouldStopCaching = isCancelled
+        if !shouldStopCaching {
+            cacheInfo = CacheInfo(
+                asset: asset,
+                targetSize: targetSize,
+                options: options
+            )
+        }
+        lock.unlock()
+
+        if shouldStopCaching {
+            imageManager.stopCachingImages(
+                for: [asset],
+                targetSize: targetSize,
+                contentMode: .aspectFill,
+                options: options
+            )
+        }
+    }
+
     func cancel() {
         lock.lock()
         guard !isCancelled else {
@@ -56,13 +89,24 @@ final class PhotosGalleryThumbnailRequest: @unchecked Sendable {
         isCancelled = true
         let task = task
         let requestID = requestID
+        let cacheInfo = cacheInfo
         self.task = nil
         self.requestID = PHInvalidImageRequestID
+        self.cacheInfo = nil
         lock.unlock()
 
         task?.cancel()
-        guard requestID != PHInvalidImageRequestID else { return }
-        imageManager.cancelImageRequest(requestID)
+        if requestID != PHInvalidImageRequestID {
+            imageManager.cancelImageRequest(requestID)
+        }
+
+        guard let cacheInfo else { return }
+        imageManager.stopCachingImages(
+            for: [cacheInfo.asset],
+            targetSize: cacheInfo.targetSize,
+            contentMode: .aspectFill,
+            options: cacheInfo.options
+        )
     }
 }
 
@@ -105,6 +149,11 @@ struct PhotosGalleryThumbnailService: PhotosGalleryThumbnailServiceProtocol {
                 for: [asset],
                 targetSize: targetSize,
                 contentMode: .aspectFill,
+                options: options
+            )
+            request.setCacheInfo(
+                asset: asset,
+                targetSize: targetSize,
                 options: options
             )
 

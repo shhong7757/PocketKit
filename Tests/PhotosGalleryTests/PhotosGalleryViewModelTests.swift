@@ -20,13 +20,13 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             pages: [0: firstPage, 2: nextPage]
         )
 
-        await viewModel.requestAccess()
+        _ = await viewModel.requestAccess()
 
         XCTAssertEqual(viewModel.presentationState, .available)
         XCTAssertEqual(viewModel.items.map(\.id), ["one", "two"])
         XCTAssertTrue(viewModel.hasNextPage)
 
-        await viewModel.loadMoreIfNeeded()
+        _ = await viewModel.loadMoreIfNeeded()
 
         XCTAssertEqual(viewModel.items.map(\.id), ["one", "two", "three"])
         XCTAssertFalse(viewModel.hasNextPage)
@@ -35,7 +35,7 @@ final class PhotosGalleryViewModelTests: XCTestCase {
     func testDeniedAccessShowsUnavailableAndDoesNotLoadItems() async {
         let viewModel = makeViewModel(accessStatus: .denied)
 
-        await viewModel.requestAccess()
+        _ = await viewModel.requestAccess()
 
         XCTAssertEqual(viewModel.presentationState, .unavailable)
         XCTAssertTrue(viewModel.items.isEmpty)
@@ -52,7 +52,7 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             pages: [0: page(items: [content(id: "authorized")], offset: 1)]
         )
 
-        await viewModel.requestAccess()
+        _ = await viewModel.requestAccess()
 
         XCTAssertEqual(viewModel.presentationState, .available)
         XCTAssertEqual(viewModel.items.map(\.id), ["authorized"])
@@ -64,7 +64,7 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             pages: [0: page(items: [content(id: "limited")], offset: 1)]
         )
 
-        await viewModel.requestAccess()
+        _ = await viewModel.requestAccess()
 
         XCTAssertEqual(viewModel.presentationState, .available)
         XCTAssertEqual(viewModel.items.map(\.id), ["limited"])
@@ -77,11 +77,11 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             pages: [0: page(items: [content(id: "one")], offset: 1)]
         )
 
-        await viewModel.requestAccess()
+        _ = await viewModel.requestAccess()
         XCTAssertEqual(viewModel.items.map(\.id), ["one"])
 
         authorizationService.status = .denied
-        await viewModel.reload()
+        _ = await viewModel.reload()
 
         XCTAssertEqual(viewModel.presentationState, .unavailable)
         XCTAssertTrue(viewModel.items.isEmpty)
@@ -98,8 +98,8 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             ]
         )
 
-        await viewModel.requestAccess()
-        await viewModel.changeFilter(to: .images)
+        _ = await viewModel.requestAccess()
+        _ = await viewModel.changeFilter(to: .images)
 
         XCTAssertEqual(viewModel.items.map(\.id), ["image"])
         XCTAssertFalse(viewModel.hasNextPage)
@@ -120,8 +120,8 @@ final class PhotosGalleryViewModelTests: XCTestCase {
             pages: [0: firstPage, 2: nextPage]
         )
 
-        await viewModel.requestAccess()
-        await viewModel.loadMoreIfNeeded()
+        _ = await viewModel.requestAccess()
+        _ = await viewModel.loadMoreIfNeeded()
 
         XCTAssertEqual(viewModel.items.map(\.id), ["one", "two", "three"])
     }
@@ -142,15 +142,35 @@ final class PhotosGalleryViewModelTests: XCTestCase {
         )
 
         let initialTask = Task { @MainActor in
-            await viewModel.requestAccess()
+            _ = await viewModel.requestAccess()
         }
         await gate.waitUntilBlocked()
 
-        await viewModel.changeFilter(to: .images)
+        _ = await viewModel.changeFilter(to: .images)
         await gate.open()
-        await initialTask.value
+        _ = await initialTask.value
 
         XCTAssertEqual(viewModel.items.map(\.id), ["image"])
+    }
+
+    func testDeniedAccessReturnsAnError() async {
+        let viewModel = makeViewModel(accessStatus: .denied)
+
+        let error = await viewModel.requestAccess()
+
+        XCTAssertEqual(error, .photoLibraryAccessDenied)
+    }
+
+    func testPageFetchFailureReturnsAnError() async {
+        let viewModel = makeViewModel(
+            paginationService: TestPaginationService(error: .pageFetchFailed)
+        )
+
+        let error = await viewModel.requestAccess()
+
+        XCTAssertEqual(error, .pageFetchFailed)
+        XCTAssertEqual(viewModel.presentationState, .available)
+        XCTAssertTrue(viewModel.items.isEmpty)
     }
 
     private func makeViewModel(
@@ -231,28 +251,35 @@ private struct TestPaginationService: PhotosGalleryPaginationServiceProtocol {
     let pagesByFilter: [PhotosGalleryFilter: [Int: PhotosGalleryPage]]
     let blockedFilter: PhotosGalleryFilter?
     let gate: TestFetchGate?
+    let error: PhotosGalleryError?
 
     init(
         pages: [Int: PhotosGalleryPage] = [:],
         pagesByFilter: [PhotosGalleryFilter: [Int: PhotosGalleryPage]] = [:],
         blockedFilter: PhotosGalleryFilter? = nil,
-        gate: TestFetchGate? = nil
+        gate: TestFetchGate? = nil,
+        error: PhotosGalleryError? = nil
     ) {
         self.pages = pages
         self.pagesByFilter = pagesByFilter
         self.blockedFilter = blockedFilter
         self.gate = gate
+        self.error = error
     }
 
     func fetch(
         offset: Int,
         limit: Int,
         filter: PhotosGalleryFilter
-    ) async -> PhotosGalleryPage {
+    ) async throws -> PhotosGalleryPage {
         if filter == blockedFilter {
             await gate?.wait()
         }
         await Task.yield()
+
+        if let error {
+            throw error
+        }
 
         let pages = pagesByFilter[filter] ?? self.pages
         return pages[offset] ?? PhotosGalleryPage(

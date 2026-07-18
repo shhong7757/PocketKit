@@ -11,8 +11,8 @@ struct PhotosGalleryPagingUseCase {
     func fetch(
         offset: Int,
         filter: PhotosGalleryFilter
-    ) async -> PhotosGalleryPage {
-        await service.fetch(
+    ) async throws -> PhotosGalleryPage {
+        try await service.fetch(
             offset: offset,
             limit: Self.pageSize,
             filter: filter

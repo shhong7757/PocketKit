@@ -18,7 +18,7 @@ private struct PreviewPhotosGalleryService: PhotosGalleryAuthorizationServicePro
         offset: Int,
         limit: Int,
         filter: PhotosGalleryFilter
-    ) async -> PhotosGalleryPage {
+    ) async throws -> PhotosGalleryPage {
         guard offset == 0 else {
             return PhotosGalleryPage(items: [], offset: offset, hasNextPage: false)
         }
@@ -61,6 +61,7 @@ private enum PhotosGalleryPreviewFactory {
                 contentAspectRatio: { _ in nil },
                 accessibilityLabel: nil,
                 onTap: { _ in },
+                onError: nil,
                 loadingContent: PhotosGallery.Slot {
                     PhotosGalleryDefaultLoadingView()
                 },
@@ -111,6 +112,7 @@ private enum PhotosGalleryPreviewFactory {
                 contentAspectRatio: { _ in nil },
                 accessibilityLabel: nil,
                 onTap: { _ in },
+                onError: nil,
                 loadingContent: PhotosGallery.Slot {
                     PhotosGalleryDefaultLoadingView()
                 },

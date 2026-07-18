@@ -5,7 +5,7 @@ protocol PhotosGalleryPaginationServiceProtocol: Sendable {
         offset: Int,
         limit: Int,
         filter: PhotosGalleryFilter
-    ) async -> PhotosGalleryPage
+    ) async throws -> PhotosGalleryPage
 }
 
 struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
@@ -17,7 +17,7 @@ struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
         offset: Int,
         limit: Int,
         filter: PhotosGalleryFilter
-    ) async -> PhotosGalleryPage {
+    ) async throws -> PhotosGalleryPage {
         guard !Task.isCancelled else {
             return PhotosGalleryPage(items: [], offset: offset, hasNextPage: false)
         }

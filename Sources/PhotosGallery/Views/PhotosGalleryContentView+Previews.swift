@@ -2,6 +2,12 @@ import SwiftUI
 import UIKit
 
 struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtocol {
+    let imageName: String?
+
+    init(imageName: String? = "photo.fill") {
+        self.imageName = imageName
+    }
+
     func requestImage(
         for content: PhotosGalleryContent,
         targetSize: CGSize,
@@ -10,7 +16,7 @@ struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtoc
         Task { @MainActor in
             onUpdate(
                 PhotosGalleryThumbnailResult(
-                    image: UIImage(systemName: "photo.fill"),
+                    image: imageName.flatMap { UIImage(systemName: $0) },
                     isDegraded: false,
                     isCancelled: false
                 )
@@ -24,10 +30,11 @@ struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtoc
 private enum PhotosGalleryContentViewPreviewFactory {
     @MainActor
     static func make(
-        mediaType: PhotosGalleryMediaType
+        mediaType: PhotosGalleryMediaType,
+        imageName: String? = "photo.fill"
     ) -> some View {
         let viewModel = PhotosGalleryContentViewModel(
-            service: PhotosGalleryPreviewThumbnailService()
+            service: PhotosGalleryPreviewThumbnailService(imageName: imageName)
         )
 
         return PhotosGalleryContentView(
@@ -47,4 +54,11 @@ private enum PhotosGalleryContentViewPreviewFactory {
 
 #Preview("Video Content") {
     PhotosGalleryContentViewPreviewFactory.make(mediaType: .video)
+}
+
+#Preview("Thumbnail Placeholder") {
+    PhotosGalleryContentViewPreviewFactory.make(
+        mediaType: .image,
+        imageName: nil
+    )
 }
