@@ -116,7 +116,10 @@ public struct GalleryView<
                     footerContent()
                         .frame(maxWidth: .infinity)
                 }
-                .frame(minHeight: proxy.size.height)
+                .frame(
+                    minHeight: proxy.size.height,
+                    alignment: .top
+                )
                 .padding(layout.resolvedContentPadding.edgeInsets)
             }
             .modifier(GalleryScrollPositionModifier(scrollPosition: scrollPosition))

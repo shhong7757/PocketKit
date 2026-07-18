@@ -41,7 +41,7 @@ struct PhotosGalleryContentView: View {
                 if let image = vm.image {
                     Image(uiImage: image)
                         .resizable()
-                        .scaledToFit()
+                        .scaledToFill()
                 }
 
                 if content.isLivePhoto {
