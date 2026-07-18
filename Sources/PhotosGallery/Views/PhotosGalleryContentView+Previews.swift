@@ -75,18 +75,22 @@ struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtoc
 private enum PhotosGalleryContentViewPreviewFactory {
     @MainActor
     static func make(
+        id: String,
         mediaType: PhotosGalleryMediaType,
         duration: TimeInterval? = nil,
         isLivePhoto: Bool = false,
         imageName: String? = "photo.fill"
     ) -> some View {
         let viewModel = PhotosGalleryContentViewModel(
-            service: PhotosGalleryPreviewThumbnailService(imageName: imageName)
+            service: PhotosGalleryPreviewThumbnailService(
+                imageName: imageName,
+                usesColorPlaceholder: imageName != nil
+            )
         )
 
         return PhotosGalleryContentView(
             content: PhotosGalleryContent(
-                id: "preview",
+                id: id,
                 mediaType: mediaType,
                 duration: duration,
                 isLivePhoto: isLivePhoto
@@ -105,7 +109,10 @@ private enum PhotosGalleryContentViewPreviewFactory {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                PhotosGalleryContentViewPreviewFactory.make(mediaType: .image)
+                PhotosGalleryContentViewPreviewFactory.make(
+                    id: "image",
+                    mediaType: .image
+                )
             }
 
             VStack(spacing: 8) {
@@ -114,6 +121,7 @@ private enum PhotosGalleryContentViewPreviewFactory {
                     .foregroundStyle(.secondary)
 
                 PhotosGalleryContentViewPreviewFactory.make(
+                    id: "video",
                     mediaType: .video,
                     duration: 65
                 )
@@ -127,6 +135,7 @@ private enum PhotosGalleryContentViewPreviewFactory {
                     .foregroundStyle(.secondary)
 
                 PhotosGalleryContentViewPreviewFactory.make(
+                    id: "live-photo",
                     mediaType: .image,
                     isLivePhoto: true
                 )
@@ -138,6 +147,7 @@ private enum PhotosGalleryContentViewPreviewFactory {
                     .foregroundStyle(.secondary)
 
                 PhotosGalleryContentViewPreviewFactory.make(
+                    id: "placeholder",
                     mediaType: .image,
                     imageName: nil
                 )
