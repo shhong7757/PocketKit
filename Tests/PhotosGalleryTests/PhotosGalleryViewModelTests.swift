@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import PocketPhotosGallery
+@testable import PhotosGallery
 
 @MainActor
 final class PhotosGalleryViewModelTests: XCTestCase {

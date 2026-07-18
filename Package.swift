@@ -18,8 +18,8 @@ let package = Package(
             targets: ["PocketStorage"]
         ),
         .library(
-            name: "PocketPhotosGallery",
-            targets: ["PocketPhotosGallery"]
+            name: "PhotosGallery",
+            targets: ["PhotosGallery"]
         )
     ],
     targets: [
@@ -35,9 +35,9 @@ let package = Package(
             path: "Sources/PocketStorage"
         ),
         .target(
-            name: "PocketPhotosGallery",
+            name: "PhotosGallery",
             dependencies: ["PocketUI"],
-            path: "Sources/PocketPhotosGallery",
+            path: "Sources/PhotosGallery",
             resources: [
                 .process("Resources")
             ]
@@ -51,8 +51,8 @@ let package = Package(
             dependencies: ["PocketStorage"]
         ),
         .testTarget(
-            name: "PocketPhotosGalleryTests",
-            dependencies: ["PocketPhotosGallery"]
+            name: "PhotosGalleryTests",
+            dependencies: ["PhotosGallery"]
         ),
     ],
     swiftLanguageModes: [.v6]
