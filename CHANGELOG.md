@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.4.1 - 2026-07-18
+
+### Added
+
+- Added DocC documentation for the PhotosGallery module and its usage patterns.
+
+### Changed
+
+- Updated PhotosGallery thumbnails to fill their gallery cells using `scaledToFill`.
+
+### Fixed
+
+- Aligned loaded gallery content to start from the top instead of the vertical center.
+
 ## v0.4.0 - 2026-07-18
 
 ### Breaking Changes
