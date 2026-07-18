@@ -17,7 +17,8 @@ private struct PreviewPhotosGalleryService: PhotosGalleryAuthorizationServicePro
     func fetch(
         offset: Int,
         limit: Int,
-        filter: PhotosGalleryFilter
+        filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
     ) async throws -> PhotosGalleryPage {
         guard offset == 0 else {
             return PhotosGalleryPage(items: [], offset: offset, hasNextPage: false)
@@ -53,6 +54,7 @@ private enum PhotosGalleryPreviewFactory {
             vm: viewModel,
             configuration: PhotosGallery.Configuration(
                 filter: .all,
+                includeLivePhotos: false,
                 selection: .none,
                 layout: .compact,
                 paginationThreshold: 12,
@@ -108,6 +110,7 @@ private enum PhotosGalleryPreviewFactory {
             vm: viewModel,
             configuration: PhotosGallery.Configuration(
                 filter: .all,
+                includeLivePhotos: false,
                 selection: .none,
                 layout: GalleryLayout(
                     minimumColumnWidth: 88,
@@ -162,9 +165,13 @@ private enum PhotosGalleryPreviewFactory {
 
     static var sampleItems: [PhotosGalleryContent] {
         (1...12).map { index in
-            PhotosGalleryContent(
+            let isVideo = index.isMultiple(of: 4)
+
+            return PhotosGalleryContent(
                 id: "preview-\(index)",
-                mediaType: index.isMultiple(of: 4) ? .video : .image
+                mediaType: isVideo ? .video : .image,
+                duration: isVideo ? 65 : nil,
+                isLivePhoto: !isVideo && index.isMultiple(of: 3)
             )
         }
     }

@@ -44,6 +44,8 @@ final class PhotosGalleryViewModel {
     @ObservationIgnored
     private var filter: PhotosGalleryFilter
     @ObservationIgnored
+    private var includeLivePhotos: Bool
+    @ObservationIgnored
     private var paginationOffset = 0
     @ObservationIgnored
     private var paginationGeneration = 0
@@ -67,11 +69,15 @@ final class PhotosGalleryViewModel {
         }
     }
 
-    convenience init(filter: PhotosGalleryFilter = .all) {
+    convenience init(
+        filter: PhotosGalleryFilter = .all,
+        includeLivePhotos: Bool = false
+    ) {
         let authorizationService = PhotosGalleryAuthorizationService.live()
         let paginationService = PhotosGalleryPaginationService.live()
         self.init(
             filter: filter,
+            includeLivePhotos: includeLivePhotos,
             authorizationUseCase: PhotosGalleryAuthorizationUseCase(
                 service: authorizationService
             ),
@@ -83,10 +89,12 @@ final class PhotosGalleryViewModel {
 
     init(
         filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool = false,
         authorizationUseCase: PhotosGalleryAuthorizationUseCase,
         pagingUseCase: PhotosGalleryPagingUseCase
     ) {
         self.filter = filter
+        self.includeLivePhotos = includeLivePhotos
         self.authorizationUseCase = authorizationUseCase
         self.pagingUseCase = pagingUseCase
         self.state = State(
@@ -131,6 +139,14 @@ final class PhotosGalleryViewModel {
         guard filter != newFilter else { return nil }
 
         filter = newFilter
+        invalidatePagination()
+        return await fetchPageIfAccessible()
+    }
+
+    func changeIncludeLivePhotos(to newValue: Bool) async -> PhotosGalleryError? {
+        guard includeLivePhotos != newValue else { return nil }
+
+        includeLivePhotos = newValue
         invalidatePagination()
         return await fetchPageIfAccessible()
     }
@@ -229,7 +245,8 @@ final class PhotosGalleryViewModel {
     private func fetchPage(offset: Int) async throws -> PhotosGalleryPage {
         try await pagingUseCase.fetch(
             offset: offset,
-            filter: filter
+            filter: filter,
+            includeLivePhotos: includeLivePhotos
         )
     }
 

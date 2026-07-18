@@ -21,6 +21,7 @@ public struct PhotosGallery: View {
 
     struct Configuration {
         let filter: PhotosGalleryFilter
+        let includeLivePhotos: Bool
         let selection: GallerySelection<String>
         let layout: GalleryLayout
         let paginationThreshold: Int
@@ -44,6 +45,7 @@ public struct PhotosGallery: View {
 
     public init(
         filter: PhotosGalleryFilter? = .all,
+        includeLivePhotos: Bool? = false,
         selection: GallerySelection<String> = .none,
         layout: GalleryLayout? = .compact,
         paginationThreshold: Int? = 12,
@@ -60,9 +62,13 @@ public struct PhotosGallery: View {
         footerContent: PhotosGallery.Slot? = nil
     ) {
         self.init(
-            vm: PhotosGalleryViewModel(filter: filter ?? .all),
+            vm: PhotosGalleryViewModel(
+                filter: filter ?? .all,
+                includeLivePhotos: includeLivePhotos ?? false
+            ),
             configuration: Configuration(
                 filter: filter ?? .all,
+                includeLivePhotos: includeLivePhotos ?? false,
                 selection: selection,
                 layout: layout ?? .compact,
                 paginationThreshold: paginationThreshold ?? 12,
@@ -169,6 +175,13 @@ public struct PhotosGallery: View {
         .onChange(of: configuration.filter) { _, newFilter in
             Task { @MainActor in
                 if let error = await vm.changeFilter(to: newFilter) {
+                    onError?(error)
+                }
+            }
+        }
+        .onChange(of: configuration.includeLivePhotos) { _, newValue in
+            Task { @MainActor in
+                if let error = await vm.changeIncludeLivePhotos(to: newValue) {
                     onError?(error)
                 }
             }

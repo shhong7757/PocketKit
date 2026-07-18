@@ -31,6 +31,8 @@ private enum PhotosGalleryContentViewPreviewFactory {
     @MainActor
     static func make(
         mediaType: PhotosGalleryMediaType,
+        duration: TimeInterval? = nil,
+        isLivePhoto: Bool = false,
         imageName: String? = "photo.fill"
     ) -> some View {
         let viewModel = PhotosGalleryContentViewModel(
@@ -40,7 +42,9 @@ private enum PhotosGalleryContentViewPreviewFactory {
         return PhotosGalleryContentView(
             content: PhotosGalleryContent(
                 id: "preview",
-                mediaType: mediaType
+                mediaType: mediaType,
+                duration: duration,
+                isLivePhoto: isLivePhoto
             ),
             vm: viewModel
         )
@@ -48,17 +52,52 @@ private enum PhotosGalleryContentViewPreviewFactory {
     }
 }
 
-#Preview("Image Content") {
-    PhotosGalleryContentViewPreviewFactory.make(mediaType: .image)
-}
+#Preview {
+    VStack(spacing: 16) {
+        HStack(spacing: 16) {
+            VStack(spacing: 8) {
+                Text("Image")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-#Preview("Video Content") {
-    PhotosGalleryContentViewPreviewFactory.make(mediaType: .video)
-}
+                PhotosGalleryContentViewPreviewFactory.make(mediaType: .image)
+            }
 
-#Preview("Thumbnail Placeholder") {
-    PhotosGalleryContentViewPreviewFactory.make(
-        mediaType: .image,
-        imageName: nil
-    )
+            VStack(spacing: 8) {
+                Text("Video · 00:01:05")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                PhotosGalleryContentViewPreviewFactory.make(
+                    mediaType: .video,
+                    duration: 65
+                )
+            }
+        }
+
+        HStack(spacing: 16) {
+            VStack(spacing: 8) {
+                Text("Live Photo")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                PhotosGalleryContentViewPreviewFactory.make(
+                    mediaType: .image,
+                    isLivePhoto: true
+                )
+            }
+
+            VStack(spacing: 8) {
+                Text("Placeholder")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                PhotosGalleryContentViewPreviewFactory.make(
+                    mediaType: .image,
+                    imageName: nil
+                )
+            }
+        }
+    }
+    .padding()
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Foundation
 
 struct PhotosGalleryContentView: View {
     let content: PhotosGalleryContent
@@ -43,14 +44,39 @@ struct PhotosGalleryContentView: View {
                         .scaledToFit()
                 }
 
-                if content.mediaType == .video {
-                    Image(systemName: "video.fill")
+                if content.isLivePhoto {
+                    Image(systemName: "livephoto")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white)
                         .padding(6)
-                        .background(.black.opacity(0.55), in: Circle())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                        .background(.black.opacity(0.7), in: Circle())
+                        .frame(
+                            maxWidth: .infinity,
+                            maxHeight: .infinity,
+                            alignment: .topLeading
+                        )
                         .padding(8)
+                }
+
+                if content.mediaType == .video,
+                   let duration = content.duration {
+                    HStack(spacing: 4) {
+                        Text(formattedDuration(duration))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(.black.opacity(0.7))
+                    )
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: .bottomTrailing
+                    )
+                    .padding(4)
                 }
             }
             .clipped()
@@ -78,6 +104,23 @@ struct PhotosGalleryContentView: View {
         CGSize(
             width: (size.width * displayScale).rounded(.up),
             height: (size.height * displayScale).rounded(.up)
+        )
+    }
+
+    private func formattedDuration(_ duration: TimeInterval) -> String {
+        guard duration.isFinite else { return "00:00:00" }
+
+        let totalSeconds = max(Int(duration), 0)
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+
+        return String(
+            format: "%02d:%02d:%02d",
+            locale: Locale(identifier: "en_US_POSIX"),
+            hours,
+            minutes,
+            seconds
         )
     }
 }

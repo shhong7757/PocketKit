@@ -270,7 +270,8 @@ private struct TestPaginationService: PhotosGalleryPaginationServiceProtocol {
     func fetch(
         offset: Int,
         limit: Int,
-        filter: PhotosGalleryFilter
+        filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
     ) async throws -> PhotosGalleryPage {
         if filter == blockedFilter {
             await gate?.wait()

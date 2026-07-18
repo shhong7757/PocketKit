@@ -4,7 +4,8 @@ protocol PhotosGalleryPaginationServiceProtocol: Sendable {
     func fetch(
         offset: Int,
         limit: Int,
-        filter: PhotosGalleryFilter
+        filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
     ) async throws -> PhotosGalleryPage
 }
 
@@ -16,13 +17,17 @@ struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
     func fetch(
         offset: Int,
         limit: Int,
-        filter: PhotosGalleryFilter
+        filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
     ) async throws -> PhotosGalleryPage {
         guard !Task.isCancelled else {
             return PhotosGalleryPage(items: [], offset: offset, hasNextPage: false)
         }
 
-        let fetchResult = fetchResult(for: filter)
+        let fetchResult = fetchResult(
+            for: filter,
+            includeLivePhotos: includeLivePhotos
+        )
         let totalCount = fetchResult.count
         let startIndex = min(max(offset, 0), totalCount)
         let endIndex = min(startIndex + max(limit, 0), totalCount)
@@ -55,7 +60,9 @@ struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
             items.append(
                 PhotosGalleryContent(
                     id: asset.localIdentifier,
-                    mediaType: mediaType
+                    mediaType: mediaType,
+                    duration: mediaType == .video ? asset.duration : nil,
+                    isLivePhoto: asset.mediaSubtypes.contains(.photoLive)
                 )
             )
         }
@@ -67,7 +74,10 @@ struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
         )
     }
 
-    private func fetchResult(for filter: PhotosGalleryFilter) -> PHFetchResult<PHAsset> {
+    private func fetchResult(
+        for filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
+    ) -> PHFetchResult<PHAsset> {
         let options = PHFetchOptions()
         options.sortDescriptors = [
             NSSortDescriptor(key: "creationDate", ascending: false)
@@ -80,15 +90,32 @@ struct PhotosGalleryPaginationService: PhotosGalleryPaginationServiceProtocol {
 
         switch filter {
         case .images:
+            if !includeLivePhotos {
+                options.predicate = NSPredicate(
+                    format: "(mediaSubtype & %d) == 0",
+                    PHAssetMediaSubtype.photoLive.rawValue
+                )
+            }
             return PHAsset.fetchAssets(with: .image, options: options)
         case .videos:
             return PHAsset.fetchAssets(with: .video, options: options)
         case .all:
-            options.predicate = NSPredicate(
-                format: "mediaType == %d OR mediaType == %d",
-                PHAssetMediaType.image.rawValue,
-                PHAssetMediaType.video.rawValue
-            )
+            let imagePredicate = includeLivePhotos
+                ? "mediaType == %d"
+                : "mediaType == %d AND (mediaSubtype & %d) == 0"
+            let predicateFormat = "(\(imagePredicate)) OR mediaType == %d"
+            options.predicate = includeLivePhotos
+                ? NSPredicate(
+                    format: predicateFormat,
+                    PHAssetMediaType.image.rawValue,
+                    PHAssetMediaType.video.rawValue
+                )
+                : NSPredicate(
+                    format: predicateFormat,
+                    PHAssetMediaType.image.rawValue,
+                    PHAssetMediaSubtype.photoLive.rawValue,
+                    PHAssetMediaType.video.rawValue
+                )
             return PHAsset.fetchAssets(with: options)
         }
     }

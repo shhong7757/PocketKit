@@ -10,12 +10,14 @@ struct PhotosGalleryPagingUseCase {
 
     func fetch(
         offset: Int,
-        filter: PhotosGalleryFilter
+        filter: PhotosGalleryFilter,
+        includeLivePhotos: Bool
     ) async throws -> PhotosGalleryPage {
         try await service.fetch(
             offset: offset,
             limit: Self.pageSize,
-            filter: filter
+            filter: filter,
+            includeLivePhotos: includeLivePhotos
         )
     }
 }
