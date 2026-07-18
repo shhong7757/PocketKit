@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.4.0 - 2026-07-18
+
+### Breaking Changes
+
+- Replaced the `PhotosGallery.accessibilityLabel` closure with an `accessibility` closure that returns `PhotosGalleryAccessibility`.
+- Replaced `GalleryPagination.threshold` with the viewport-based `visibilityThreshold`.
+- Removed the public `PhotosGallery.paginationThreshold` parameter; page size and visibility threshold are now managed by the module's paging policy.
+- Made `PhotosGallery.filter`, `includeLivePhotos`, and `layout` non-optional parameters with defaults.
+
+### Added
+
+- Added the `PhotosGallery` product for browsing and selecting images and videos from the Photos library.
+- Added Photos library authorization handling with loading, unavailable, and empty content injection.
+- Added paginated image and video loading with refresh and next-page support.
+- Added Live Photo filtering and Live Photo indicators.
+- Added video duration metadata and accessibility values.
+- Added `PhotosGalleryAccessibility` for localized item labels and additional accessibility metadata.
+- Added viewport visibility-based pagination using SwiftUI's scroll visibility APIs.
+- Added configurable header and footer content for PhotosGallery previews and consumers.
+
+### Changed
+
+- Delegated loading, unavailable, and empty-state presentation to the consuming view.
+- Moved PhotosGallery paging constants into `PhotosGalleryPagingPolicy`.
+- Added color-based preview placeholders to make different media items easier to distinguish.
+
+### Fixed
+
+- Prevented thumbnail cropping by fitting thumbnails within their cells.
+- Prevented duplicate next-page requests for the same pagination boundary.
+- Added thumbnail request cancellation and cache cleanup when gallery cells disappear.
+
 ## v0.3.0 - 2026-07-17
 
 ### Added
