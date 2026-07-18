@@ -3,27 +3,73 @@ import XCTest
 @testable import PocketUI
 
 final class GalleryPaginationStateTests: XCTestCase {
-    func testRequestsNextPageOnlyWhenLastItemAppears() {
+    func testRequestsNextPageWhenLastVisibleItemIsReported() {
         var state = GalleryPagination.State<String>()
         let itemIDs = ["first", "second"]
 
         XCTAssertFalse(
-            state.recordAppearance(
-                of: "first",
+            state.recordVisibleItems(
+                ["first"],
                 itemIDs: itemIDs,
                 canRequestNextPage: true
             )
         )
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: itemIDs,
                 canRequestNextPage: true
             )
         )
         XCTAssertFalse(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
+                itemIDs: itemIDs,
+                canRequestNextPage: true
+            )
+        )
+    }
+
+    func testSameVisibleBoundaryDoesNotRequestAgainAfterFetchingFinishes() {
+        var state = GalleryPagination.State<String>()
+        let itemIDs = ["first", "second"]
+
+        XCTAssertTrue(
+            state.recordVisibleItems(
+                ["second"],
+                itemIDs: itemIDs,
+                canRequestNextPage: true
+            )
+        )
+        XCTAssertFalse(
+            state.requestNextPageIfNeeded(
+                itemIDs: itemIDs,
+                canRequestNextPage: true
+            )
+        )
+    }
+
+    func testBoundaryCanBeRequestedAgainAfterLeavingVisibility() {
+        var state = GalleryPagination.State<String>()
+        let itemIDs = ["first", "second"]
+
+        XCTAssertTrue(
+            state.recordVisibleItems(
+                ["second"],
+                itemIDs: itemIDs,
+                canRequestNextPage: true
+            )
+        )
+        XCTAssertFalse(
+            state.recordVisibleItems(
+                ["first"],
+                itemIDs: itemIDs,
+                canRequestNextPage: true
+            )
+        )
+        XCTAssertTrue(
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: itemIDs,
                 canRequestNextPage: true
             )
@@ -35,8 +81,8 @@ final class GalleryPaginationStateTests: XCTestCase {
         let itemIDs = ["first", "second"]
 
         XCTAssertFalse(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: itemIDs,
                 canRequestNextPage: false
             )
@@ -54,8 +100,8 @@ final class GalleryPaginationStateTests: XCTestCase {
         var state = GalleryPagination.State<String>()
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: ["first", "second"],
                 canRequestNextPage: true
             )
@@ -71,12 +117,12 @@ final class GalleryPaginationStateTests: XCTestCase {
         )
     }
 
-    func testAppendingItemsWaitsForNewLastItemToAppear() {
+    func testAppendingItemsWaitsForNewLastItemToBecomeVisible() {
         var state = GalleryPagination.State<String>()
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: ["first", "second"],
                 canRequestNextPage: true
             )
@@ -91,32 +137,23 @@ final class GalleryPaginationStateTests: XCTestCase {
             )
         )
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "third",
+            state.recordVisibleItems(
+                ["third"],
                 itemIDs: ["first", "second", "third"],
                 canRequestNextPage: true
             )
         )
     }
 
-    func testThresholdCanRequestNextPageBeforeLastItemAppears() {
+    func testVisibleItemsReportedByVisibilityThresholdCanRequestNextPage() {
         var state = GalleryPagination.State<String>()
         let itemIDs = ["first", "second", "third", "fourth"]
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "third",
+            state.recordVisibleItems(
+                ["third", "fourth"],
                 itemIDs: itemIDs,
-                canRequestNextPage: true,
-                threshold: 2
-            )
-        )
-        XCTAssertFalse(
-            state.recordAppearance(
-                of: "fourth",
-                itemIDs: itemIDs,
-                canRequestNextPage: true,
-                threshold: 2
+                canRequestNextPage: true
             )
         )
     }
@@ -126,8 +163,8 @@ final class GalleryPaginationStateTests: XCTestCase {
         let itemIDs = ["first", "second"]
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: itemIDs,
                 canRequestNextPage: true
             )
@@ -148,8 +185,8 @@ final class GalleryPaginationStateTests: XCTestCase {
         let itemIDs = ["first", "second"]
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: itemIDs,
                 canRequestNextPage: true
             )
@@ -165,12 +202,12 @@ final class GalleryPaginationStateTests: XCTestCase {
         )
     }
 
-    func testNewBoundaryCanRequestWhenVisibleItemIsWithinThreshold() {
+    func testNewBoundaryCanRequestWhenVisibleLastItemChanges() {
         var state = GalleryPagination.State<String>()
 
         XCTAssertTrue(
-            state.recordAppearance(
-                of: "second",
+            state.recordVisibleItems(
+                ["second"],
                 itemIDs: ["first", "second"],
                 canRequestNextPage: true
             )
@@ -178,11 +215,17 @@ final class GalleryPaginationStateTests: XCTestCase {
 
         state.syncVisibleItems(with: ["first", "second", "third"])
 
-        XCTAssertTrue(
+        XCTAssertFalse(
             state.requestNextPageIfNeeded(
                 itemIDs: ["first", "second", "third"],
-                canRequestNextPage: true,
-                threshold: 2
+                canRequestNextPage: true
+            )
+        )
+        XCTAssertTrue(
+            state.recordVisibleItems(
+                ["third"],
+                itemIDs: ["first", "second", "third"],
+                canRequestNextPage: true
             )
         )
     }

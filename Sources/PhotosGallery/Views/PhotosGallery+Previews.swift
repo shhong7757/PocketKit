@@ -34,7 +34,9 @@ private enum PhotosGalleryPreviewFactory {
     static func make(
         accessStatus: PhotosGalleryAccessStatus,
         items: [PhotosGalleryContent] = [],
-        thumbnailService: any PhotosGalleryThumbnailServiceProtocol = PhotosGalleryPreviewThumbnailService()
+        thumbnailService: any PhotosGalleryThumbnailServiceProtocol = PhotosGalleryPreviewThumbnailService(
+            usesColorPlaceholder: true
+        )
     ) -> some View {
         let service = PreviewPhotosGalleryService(
             accessStatus: accessStatus,
@@ -57,7 +59,6 @@ private enum PhotosGalleryPreviewFactory {
                 includeLivePhotos: false,
                 selection: .none,
                 layout: .compact,
-                paginationThreshold: 12,
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
@@ -118,7 +119,6 @@ private enum PhotosGalleryPreviewFactory {
                     cellAspectRatio: 4 / 3,
                     showsScrollIndicators: true
                 ),
-                paginationThreshold: 12,
                 zoomTransition: nil,
                 scrollPosition: nil,
                 contentAspectRatio: { _ in nil },
@@ -159,7 +159,9 @@ private enum PhotosGalleryPreviewFactory {
                         .padding()
                 }
             ),
-            thumbnailService: PhotosGalleryPreviewThumbnailService()
+            thumbnailService: PhotosGalleryPreviewThumbnailService(
+                usesColorPlaceholder: true
+            )
         )
     }
 

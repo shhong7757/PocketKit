@@ -1,7 +1,5 @@
 @MainActor
 struct PhotosGalleryPagingUseCase {
-    private static let pageSize = 60
-
     private let service: any PhotosGalleryPaginationServiceProtocol
 
     init(service: any PhotosGalleryPaginationServiceProtocol) {
@@ -15,7 +13,7 @@ struct PhotosGalleryPagingUseCase {
     ) async throws -> PhotosGalleryPage {
         try await service.fetch(
             offset: offset,
-            limit: Self.pageSize,
+            limit: PhotosGalleryPagingPolicy.pageSize,
             filter: filter,
             includeLivePhotos: includeLivePhotos
         )

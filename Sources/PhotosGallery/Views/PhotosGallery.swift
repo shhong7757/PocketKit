@@ -24,7 +24,6 @@ public struct PhotosGallery: View {
         let includeLivePhotos: Bool
         let selection: GallerySelection<String>
         let layout: GalleryLayout
-        let paginationThreshold: Int
         let zoomTransition: GalleryZoomTransition<String>?
         let scrollPosition: Binding<ScrollPosition>?
         let contentAspectRatio: (PhotosGalleryContent) -> CGFloat?
@@ -48,7 +47,6 @@ public struct PhotosGallery: View {
         includeLivePhotos: Bool? = false,
         selection: GallerySelection<String> = .none,
         layout: GalleryLayout? = .compact,
-        paginationThreshold: Int? = 12,
         zoomTransition: GalleryZoomTransition<String>? = nil,
         scrollPosition: Binding<ScrollPosition>? = nil,
         contentAspectRatio: @escaping (PhotosGalleryContent) -> CGFloat? = { _ in nil },
@@ -71,7 +69,6 @@ public struct PhotosGallery: View {
                 includeLivePhotos: includeLivePhotos ?? false,
                 selection: selection,
                 layout: layout ?? .compact,
-                paginationThreshold: paginationThreshold ?? 12,
                 zoomTransition: zoomTransition,
                 scrollPosition: scrollPosition,
                 contentAspectRatio: contentAspectRatio,
@@ -130,7 +127,7 @@ public struct PhotosGallery: View {
                     pagination: GalleryPagination(
                         hasNextPage: vm.hasNextPage,
                         isFetchingNextPage: vm.isFetchingNextPage,
-                        threshold: configuration.paginationThreshold,
+                        visibilityThreshold: PhotosGalleryPagingPolicy.visibilityThreshold,
                         fetchNextPage: {
                             Task { @MainActor in
                                 if let error = await vm.loadMoreIfNeeded() {

@@ -3,10 +3,14 @@ import XCTest
 @testable import PocketUI
 
 final class GalleryPaginationTests: XCTestCase {
-    func testPaginationResolvesInvalidThresholdToMinimumPrefetchWindow() {
-        let pagination = GalleryPagination(threshold: 0)
+    func testPaginationResolvesVisibilityThresholdToValidRange() {
+        let pagination = GalleryPagination(visibilityThreshold: 1.5)
 
-        XCTAssertEqual(pagination.resolvedThreshold, 1)
+        XCTAssertEqual(pagination.resolvedVisibilityThreshold, 1)
+
+        let lowerBoundPagination = GalleryPagination(visibilityThreshold: -0.5)
+
+        XCTAssertEqual(lowerBoundPagination.resolvedVisibilityThreshold, 0)
     }
 
     func testPaginationRequestsNextPageOnlyWhenAvailable() {

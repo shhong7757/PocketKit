@@ -266,11 +266,12 @@ private var activePhoto: Photo? {
 ### 빈 상태, 다음 페이지, 새로고침
 
 빈 상태는 `emptyContent`로, 끝까지 스크롤했을 때의 다음 페이지 요청은
-``GalleryPagination``으로 연결합니다. `threshold`는 마지막 몇 개 항목 중 하나가
-보였을 때 `fetchNextPage`를 미리 호출할지 정합니다. `GalleryView`는
-`isFetchingNextPage`가 `true`인 동안 같은 경계에 대한 중복 요청을 막습니다.
-다음 페이지 요청이 끝나거나 `hasNextPage`가 다시 `true`가 되면 현재 보이는
-경계는 다시 요청할 수 있습니다.
+``GalleryPagination``으로 연결합니다. `visibilityThreshold`는 항목이 viewport에
+얼마나 보여야 `fetchNextPage`를 미리 호출할지 정합니다. `GalleryView`는
+같은 페이지 경계에 대한 중복 요청을 막고, 새로운 아이템이 추가되어 경계가
+바뀌었을 때만 다음 요청을 허용합니다. 요청이 끝나면 새 경계를 다시 평가하지만,
+같은 경계는 실패 여부와 관계없이 즉시 재요청하지 않습니다. `hasNextPage`가
+다시 `true`가 되면 현재 보이는 경계를 다시 평가할 수 있습니다.
 플랫폼 새로고침 제스처가 필요하면 `onRefresh`에 async 작업을 전달합니다.
 
 ```swift
@@ -279,7 +280,7 @@ GalleryView(
     pagination: GalleryPagination(
         hasNextPage: hasNextPage,
         isFetchingNextPage: isFetchingNextPage,
-        threshold: 4,
+        visibilityThreshold: 0.2,
         fetchNextPage: fetchNextPage
     ),
     onRefresh: refresh,

@@ -8,8 +8,8 @@ public struct GalleryPagination {
     /// 다음 페이지를 불러오는 중인지 여부입니다.
     public let isFetchingNextPage: Bool
 
-    /// 마지막 몇 개 항목 중 하나가 보였을 때 다음 페이지를 미리 요청할지 정합니다.
-    public let threshold: Int
+    /// 항목이 viewport에 이 비율만큼 보였을 때 다음 페이지를 미리 요청할지 정합니다.
+    public let visibilityThreshold: Double
 
     private let fetchNextPageAction: () -> Void
 
@@ -18,7 +18,7 @@ public struct GalleryPagination {
         GalleryPagination(
             hasNextPage: false,
             isFetchingNextPage: false,
-            threshold: 1,
+            visibilityThreshold: 0.2,
             fetchNextPage: {}
         )
     }
@@ -27,17 +27,17 @@ public struct GalleryPagination {
     public init(
         hasNextPage: Bool = false,
         isFetchingNextPage: Bool = false,
-        threshold: Int = 1,
+        visibilityThreshold: Double = 0.2,
         fetchNextPage: @escaping () -> Void = {}
     ) {
         self.hasNextPage = hasNextPage
         self.isFetchingNextPage = isFetchingNextPage
-        self.threshold = threshold
+        self.visibilityThreshold = visibilityThreshold
         self.fetchNextPageAction = fetchNextPage
     }
 
-    internal var resolvedThreshold: Int {
-        max(1, threshold)
+    internal var resolvedVisibilityThreshold: Double {
+        min(max(visibilityThreshold, 0), 1)
     }
 
     internal func requestNextPage() {
@@ -52,23 +52,22 @@ extension GalleryPagination {
         private var visibleItemIDs: Set<ID> = []
         private var lastRequestedPageBoundary: GalleryPaginationPageBoundary<ID>?
 
-        mutating func recordAppearance(
-            of id: ID,
+        mutating func recordVisibleItems(
+            _ visibleIDs: [ID],
             itemIDs: [ID],
-            canRequestNextPage: Bool,
-            threshold: Int = 1
+            canRequestNextPage: Bool
         ) -> Bool {
-            visibleItemIDs.insert(id)
-            return requestNextPageIfNeeded(
-                for: id,
-                itemIDs: itemIDs,
-                canRequestNextPage: canRequestNextPage,
-                threshold: threshold
-            )
-        }
+            visibleItemIDs = Set(visibleIDs)
 
-        mutating func recordDisappearance(of id: ID) {
-            visibleItemIDs.remove(id)
+            if let lastItemID = itemIDs.last,
+               !visibleItemIDs.contains(lastItemID) {
+                lastRequestedPageBoundary = nil
+            }
+
+            return requestNextPageIfNeeded(
+                itemIDs: itemIDs,
+                canRequestNextPage: canRequestNextPage
+            )
         }
 
         mutating func syncVisibleItems(with itemIDs: [ID]) {
@@ -81,42 +80,14 @@ extension GalleryPagination {
 
         mutating func requestNextPageIfNeeded(
             itemIDs: [ID],
-            canRequestNextPage: Bool,
-            threshold: Int = 1
+            canRequestNextPage: Bool
         ) -> Bool {
-            guard
-                visibleItemIDs.contains(where: { id in
-                    isPrefetchTrigger(
-                        id,
-                        itemIDs: itemIDs,
-                        threshold: threshold
-                    )
-                })
-            else {
+            guard let lastItemID = itemIDs.last,
+                  visibleItemIDs.contains(lastItemID) else {
                 return false
             }
 
             guard canRequestNextPage else { return false }
-
-            return markPageBoundaryRequestedIfNeeded(itemIDs: itemIDs)
-        }
-
-        private mutating func requestNextPageIfNeeded(
-            for visibleID: ID,
-            itemIDs: [ID],
-            canRequestNextPage: Bool,
-            threshold: Int
-        ) -> Bool {
-            guard canRequestNextPage else { return false }
-            guard
-                isPrefetchTrigger(
-                    visibleID,
-                    itemIDs: itemIDs,
-                    threshold: threshold
-                )
-            else {
-                return false
-            }
 
             return markPageBoundaryRequestedIfNeeded(itemIDs: itemIDs)
         }
@@ -138,14 +109,6 @@ extension GalleryPagination {
 
             lastRequestedPageBoundary = pageBoundary
             return true
-        }
-
-        private func isPrefetchTrigger(
-            _ id: ID,
-            itemIDs: [ID],
-            threshold: Int
-        ) -> Bool {
-            return itemIDs.suffix(threshold).contains(id)
         }
 
     }

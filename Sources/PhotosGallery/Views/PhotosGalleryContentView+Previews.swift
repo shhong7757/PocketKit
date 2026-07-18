@@ -3,9 +3,14 @@ import UIKit
 
 struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtocol {
     let imageName: String?
+    let usesColorPlaceholder: Bool
 
-    init(imageName: String? = "photo.fill") {
+    init(
+        imageName: String? = "photo.fill",
+        usesColorPlaceholder: Bool = false
+    ) {
         self.imageName = imageName
+        self.usesColorPlaceholder = usesColorPlaceholder
     }
 
     func requestImage(
@@ -14,9 +19,16 @@ struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtoc
         onUpdate: @escaping @Sendable @MainActor (PhotosGalleryThumbnailResult) -> Void
     ) -> PhotosGalleryThumbnailRequest? {
         Task { @MainActor in
+            let image = usesColorPlaceholder
+                ? makeColorPlaceholder(
+                    for: content.id,
+                    targetSize: targetSize
+                )
+                : imageName.flatMap { UIImage(systemName: $0) }
+
             onUpdate(
                 PhotosGalleryThumbnailResult(
-                    image: imageName.flatMap { UIImage(systemName: $0) },
+                    image: image,
                     isDegraded: false,
                     isCancelled: false
                 )
@@ -24,6 +36,39 @@ struct PhotosGalleryPreviewThumbnailService: PhotosGalleryThumbnailServiceProtoc
         }
 
         return nil
+    }
+
+    @MainActor
+    private func makeColorPlaceholder(
+        for contentID: String,
+        targetSize: CGSize
+    ) -> UIImage {
+        let colors: [UIColor] = [
+            .systemRed,
+            .systemOrange,
+            .systemYellow,
+            .systemGreen,
+            .systemMint,
+            .systemTeal,
+            .systemCyan,
+            .systemBlue,
+            .systemIndigo,
+            .systemPurple,
+            .systemPink,
+            .systemBrown,
+        ]
+        let colorIndex = contentID.utf8.reduce(0) { partialResult, byte in
+            (partialResult + Int(byte)) % colors.count
+        }
+        let size = CGSize(
+            width: max(targetSize.width, 1),
+            height: max(targetSize.height, 1)
+        )
+
+        return UIGraphicsImageRenderer(size: size).image { context in
+            context.cgContext.setFillColor(colors[colorIndex].cgColor)
+            context.cgContext.fill(CGRect(origin: .zero, size: size))
+        }
     }
 }
 

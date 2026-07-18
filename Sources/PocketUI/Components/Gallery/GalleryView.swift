@@ -119,6 +119,12 @@ public struct GalleryView<
             .modifier(GalleryScrollPositionModifier(scrollPosition: scrollPosition))
             .modifier(GalleryPullToRefreshModifier(onRefresh: onRefresh))
             .scrollIndicators(layout.showsScrollIndicators ? .visible : .hidden)
+            .onScrollTargetVisibilityChange(
+                idType: Item.ID.self,
+                threshold: pagination.resolvedVisibilityThreshold
+            ) { visibleIDs in
+                handleVisibleItemIDsChange(visibleIDs)
+            }
             .onChange(of: currentItemIDs) { _, newItemIDs in
                 handleItemIDsChange(to: newItemIDs)
             }
@@ -166,12 +172,6 @@ public struct GalleryView<
             )
         )
         .id(item.id)
-        .onAppear {
-            handleItemDidAppear(item.id)
-        }
-        .onDisappear {
-            handleItemDidDisappear(item.id)
-        }
     }
 
     private func handleCellTap(for item: Item) {
@@ -202,19 +202,14 @@ extension GalleryView {
         pagination.hasNextPage && !pagination.isFetchingNextPage
     }
 
-    fileprivate func handleItemDidAppear(_ id: Item.ID) {
-        if paginationState.recordAppearance(
-            of: id,
+    fileprivate func handleVisibleItemIDsChange(_ visibleIDs: [Item.ID]) {
+        if paginationState.recordVisibleItems(
+            visibleIDs,
             itemIDs: currentItemIDs,
-            canRequestNextPage: canRequestNextPage,
-            threshold: pagination.resolvedThreshold
+            canRequestNextPage: canRequestNextPage
         ) {
             pagination.requestNextPage()
         }
-    }
-
-    fileprivate func handleItemDidDisappear(_ id: Item.ID) {
-        paginationState.recordDisappearance(of: id)
     }
 
     fileprivate func handleItemIDsChange(to itemIDs: [Item.ID]) {
@@ -238,15 +233,15 @@ extension GalleryView {
     ) {
         guard oldValue && !newValue else { return }
 
-        paginationState.allowRetryForCurrentItems()
+        // Re-evaluate only after the request completes. The page boundary
+        // remains locked, so a failed request cannot immediately retry itself.
         requestNextPageIfNeeded()
     }
 
     fileprivate func requestNextPageIfNeeded() {
         if paginationState.requestNextPageIfNeeded(
             itemIDs: currentItemIDs,
-            canRequestNextPage: canRequestNextPage,
-            threshold: pagination.resolvedThreshold
+            canRequestNextPage: canRequestNextPage
         ) {
             pagination.requestNextPage()
         }
